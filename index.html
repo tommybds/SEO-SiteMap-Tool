@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SEO Sitemap Audit</title>
+  <title>Audit SEO Sitemap en ligne | Analyse XML, Robots.txt et CSV</title>
+  <meta id="meta-description" name="description" content="Analysez votre sitemap XML, vérifiez robots.txt, détectez les problèmes SEO techniques et exportez un rapport CSV partageable.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <script src="analytics.local.js"></script>
   <script>
     (function initGtag() {
@@ -70,6 +72,36 @@
     }
     h1 { margin: 0 0 8px; font-size: 24px; }
     p  { margin: 0 0 14px; color: var(--muted); }
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .lang-switch {
+      display: inline-flex;
+      gap: 6px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 4px;
+    }
+    .lang-switch .lang-btn {
+      border: 0;
+      background: transparent !important;
+      color: #334155;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: none;
+    }
+    .lang-switch .lang-btn.active {
+      background: #0f766e !important;
+      color: #fff;
+    }
     form {
       display: grid;
       grid-template-columns: 1fr 120px 100px 100px;
@@ -465,6 +497,10 @@
     @media (max-width: 860px) {
       form { grid-template-columns: 1fr; }
       .filter-grid { grid-template-columns: 1fr; }
+      .title-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
       .card.csv-full-width {
         width: 100dvw;
         max-width: 100dvw;
@@ -488,28 +524,34 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>SEO Sitemap Audit</h1>
-      <p>Entrez un sitemap XML. L’outil lance le script Python en arrière-plan et produit un CSV téléchargeable, avec aperçu et insights dans la page.</p>
+      <div class="title-row">
+        <h1 id="app-title">SEO Sitemap Audit</h1>
+        <div class="lang-switch">
+          <button type="button" id="lang-fr-btn" class="lang-btn">FR</button>
+          <button type="button" id="lang-en-btn" class="lang-btn">EN</button>
+        </div>
+      </div>
+      <p id="app-subtitle">Entrez un sitemap XML. L’outil lance le script Python en arrière-plan et produit un CSV téléchargeable, avec aperçu et insights dans la page.</p>
 
       <form id="audit-form">
         <div>
-          <label for="sitemap">URL du sitemap</label>
+          <label id="label-sitemap" for="sitemap">URL du sitemap</label>
           <input id="sitemap" name="sitemap" type="url" placeholder="https://example.com/sitemap.xml" required>
         </div>
         <div>
-          <label for="max_urls">Max URLs</label>
+          <label id="label-max-urls" for="max_urls">Max URLs</label>
           <input id="max_urls" name="max_urls" type="number" min="1" max="5000" value="500">
         </div>
         <div>
-          <label for="workers">Workers</label>
+          <label id="label-workers" for="workers">Workers</label>
           <input id="workers" name="workers" type="number" min="1" max="32" value="8">
         </div>
         <div>
-          <label for="timeout">Timeout (s)</label>
+          <label id="label-timeout" for="timeout">Timeout (s)</label>
           <input id="timeout" name="timeout" type="number" min="5" max="60" value="15">
         </div>
         <div class="actions" style="grid-column: 1/-1;">
-          <label><input type="checkbox" id="skip_robots_txt" name="skip_robots_txt"> Ignorer robots.txt</label>
+          <label id="label-skip-robots"><input type="checkbox" id="skip_robots_txt" name="skip_robots_txt"> <span id="label-skip-robots-text">Ignorer robots.txt</span></label>
           <button id="run-btn" type="submit">Lancer l’audit</button>
         </div>
       </form>
@@ -518,7 +560,7 @@
 
     <div class="card" id="result-card" style="display:none;">
       <div class="row">
-        <strong>Suivi du job</strong>
+        <strong id="job-section-title">Suivi du job</strong>
         <div class="download-actions">
           <a id="download-link" class="button-link" href="#" style="display:none;">Télécharger le CSV</a>
           <a id="conflicts-download-link" class="button-link" href="#" style="display:none;">Télécharger les conflits</a>
@@ -529,13 +571,13 @@
       <div id="status-box" class="status"></div>
 
       <div class="summary" id="summary" style="display:none;">
-        <div class="kpi"><b id="kpi-total">0</b><span>Pages analysées</span></div>
-        <div class="kpi"><b id="kpi-ok">0</b><span>Sans problèmes</span></div>
-        <div class="kpi"><b id="kpi-ko">0</b><span>Avec problèmes</span></div>
+        <div class="kpi"><b id="kpi-total">0</b><span id="kpi-total-label">Pages analysées</span></div>
+        <div class="kpi"><b id="kpi-ok">0</b><span id="kpi-ok-label">Sans problèmes</span></div>
+        <div class="kpi"><b id="kpi-ko">0</b><span id="kpi-ko-label">Avec problèmes</span></div>
       </div>
 
       <div id="insights-box" class="status insights-panel" style="display:none;">
-        <strong class="insights-title">Insights clés</strong>
+        <strong id="insights-title" class="insights-title">Insights clés</strong>
         <ul id="insights-list" class="insights-list"></ul>
         <div id="top-issues-box" class="insight-groups"></div>
       </div>
@@ -545,20 +587,20 @@
       <div id="history-box" class="muted"></div>
 
       <details>
-        <summary>Logs techniques</summary>
+        <summary id="logs-summary">Logs techniques</summary>
         <pre id="log-tail">Aucun log pour le moment.</pre>
       </details>
     </div>
 
     <div class="card csv-full-width" id="preview-card" style="display:none;">
-      <strong>Aperçu du CSV</strong>
+      <strong id="preview-title">Aperçu du CSV</strong>
       <div class="filter-grid">
         <div>
-          <label for="filter-issue">Filtre issue</label>
+          <label id="filter-issue-label" for="filter-issue">Filtre issue</label>
           <input id="filter-issue" type="text" placeholder="ex : noindex">
         </div>
         <div>
-          <label for="filter-status">HTTP</label>
+          <label id="filter-http-label" for="filter-status">HTTP</label>
           <select id="filter-status">
             <option value="all">Tous</option>
             <option value="200">200</option>
@@ -566,7 +608,7 @@
           </select>
         </div>
         <div>
-          <label for="filter-indexable">Indexable</label>
+          <label id="filter-indexable-label" for="filter-indexable">Indexable</label>
           <select id="filter-indexable">
             <option value="all">Tous</option>
             <option value="true">Oui</option>
@@ -574,7 +616,7 @@
           </select>
         </div>
         <div>
-          <label for="filter-priority">Priorité</label>
+          <label id="filter-priority-label" for="filter-priority">Priorité</label>
           <select id="filter-priority">
             <option value="all">Toutes</option>
             <option value="critical">Critique</option>
@@ -620,6 +662,27 @@
     const filterStatus = document.getElementById('filter-status');
     const filterIndexable = document.getElementById('filter-indexable');
     const filterPriority = document.getElementById('filter-priority');
+    const langFrBtn = document.getElementById('lang-fr-btn');
+    const langEnBtn = document.getElementById('lang-en-btn');
+    const metaDescriptionTag = document.getElementById('meta-description');
+    const appTitle = document.getElementById('app-title');
+    const appSubtitle = document.getElementById('app-subtitle');
+    const labelSitemap = document.getElementById('label-sitemap');
+    const labelMaxUrls = document.getElementById('label-max-urls');
+    const labelWorkers = document.getElementById('label-workers');
+    const labelTimeout = document.getElementById('label-timeout');
+    const labelSkipRobotsText = document.getElementById('label-skip-robots-text');
+    const jobSectionTitle = document.getElementById('job-section-title');
+    const kpiTotalLabel = document.getElementById('kpi-total-label');
+    const kpiOkLabel = document.getElementById('kpi-ok-label');
+    const kpiKoLabel = document.getElementById('kpi-ko-label');
+    const insightsTitle = document.getElementById('insights-title');
+    const logsSummary = document.getElementById('logs-summary');
+    const previewTitle = document.getElementById('preview-title');
+    const filterIssueLabel = document.getElementById('filter-issue-label');
+    const filterHttpLabel = document.getElementById('filter-http-label');
+    const filterIndexableLabel = document.getElementById('filter-indexable-label');
+    const filterPriorityLabel = document.getElementById('filter-priority-label');
 
     let pollTimer = null;
     let previewLoadedFor = null;
@@ -628,6 +691,276 @@
     let previewTotalRows = 0;
     let previewTruncated = false;
     let currentSort = { key: 'priority_score', direction: 'desc' };
+    let latestStatusPayload = null;
+    let currentLang = 'fr';
+
+    const I18N = {
+      fr: {
+        page_title: 'Audit SEO Sitemap en ligne | Analyse XML, Robots.txt et CSV',
+        meta_description: 'Analysez votre sitemap XML, vérifiez robots.txt, détectez les problèmes SEO techniques et exportez un rapport CSV partageable.',
+        app_title: 'SEO Sitemap Audit',
+        app_subtitle: 'Entrez un sitemap XML. L’outil lance le script Python en arrière-plan et produit un CSV téléchargeable, avec aperçu et insights dans la page.',
+        label_sitemap: 'URL du sitemap',
+        label_max_urls: 'Max URLs',
+        label_workers: 'Workers',
+        label_timeout: 'Timeout (s)',
+        label_skip_robots: 'Ignorer robots.txt',
+        run_btn_idle: 'Lancer l’audit',
+        run_btn_running: 'Audit en cours...',
+        job_section_title: 'Suivi du job',
+        download_csv: 'Télécharger le CSV',
+        download_conflicts: 'Télécharger les conflits',
+        copy_share_url: 'Copier l’URL du rapport',
+        kpi_total: 'Pages analysées',
+        kpi_ok: 'Sans problèmes',
+        kpi_ko: 'Avec problèmes',
+        insights_title: 'Insights clés',
+        logs_summary: 'Logs techniques',
+        no_logs_yet: 'Aucun log pour le moment.',
+        preview_title: 'Aperçu du CSV',
+        filter_issue_label: 'Filtre issue',
+        filter_issue_placeholder: 'ex : noindex',
+        filter_http_label: 'HTTP',
+        filter_indexable_label: 'Indexable',
+        filter_priority_label: 'Priorité',
+        opt_all: 'Tous',
+        opt_not_200: 'Non 200',
+        opt_yes: 'Oui',
+        opt_no: 'Non',
+        opt_all_f: 'Toutes',
+        opt_critical: 'Critique',
+        opt_high: 'Haute',
+        opt_medium: 'Moyenne',
+        opt_low: 'Basse',
+        opt_none: 'Aucune',
+        history_title: 'Historique (même sitemap)',
+        history_item: '{job_id} | {date} | pages={total} | issues={issues}',
+        diff_title: 'Comparaison avec le scan précédent: {job_id}',
+        diff_new_issue_urls: 'Nouvelles URLs avec problèmes',
+        diff_resolved_issue_urls: 'URLs corrigées',
+        diff_changed_issue_urls: 'URLs avec problèmes modifiés',
+        diff_added_urls: 'URLs ajoutées',
+        diff_removed_urls: 'URLs supprimées',
+        insights_priority_critical: 'Critique',
+        insights_priority_high: 'Haute',
+        insights_priority_medium: 'Moyenne',
+        insights_priority_low: 'Basse',
+        insights_priority_none: 'Aucune',
+        insights_conflicts_label: 'Conflits sitemap/indexation',
+        insights_top_issues: 'Top problèmes détectés',
+        insights_top_conflict_reasons: 'Top causes de conflit',
+        insights_empty: 'Aucun top problème détecté sur cet échantillon.',
+        status_job: 'Job',
+        status_status: 'Statut',
+        status_sitemap: 'Sitemap',
+        status_started: 'Début',
+        status_completed: 'Fin',
+        status_queued: 'en attente',
+        status_running: 'en cours',
+        status_completed_value: 'terminé',
+        status_failed: 'échoué',
+        status_unknown: 'inconnu',
+        table_empty: 'Rapport vide.',
+        table_no_issue: 'Aucun',
+        table_more_issues: '+{count} autres',
+        table_indexable_yes: 'Oui',
+        table_indexable_no: 'Non',
+        preview_loading: 'Chargement de l’aperçu...',
+        preview_error_fallback: 'Erreur preview',
+        status_error_fallback: 'Erreur status',
+        audit_starting: 'Démarrage du job...',
+        logs_waiting: 'En attente de logs...',
+        api_audit_error: 'Erreur API audit',
+        share_unavailable: 'Lien de partage indisponible pour le moment.',
+        share_copied: 'URL de partage copiée dans le presse-papiers.',
+        share_copy_failed: 'Impossible de copier automatiquement. URL: {url}',
+        shared_loading_report: 'Chargement du rapport partagé...',
+        shared_loading_logs: 'Chargement des logs...',
+        preview_meta_truncated: '{displayed} lignes filtrées sur {loaded} chargées ({total} total CSV).',
+        preview_meta_full: '{displayed} lignes filtrées sur {loaded}.',
+        header_final_url: 'URL finale',
+        header_load_ms: 'Temps (ms)',
+        header_is_indexable: 'Indexable',
+        header_meta_description_length: 'Meta desc. (len)',
+        header_priority_score: 'Score priorité',
+        header_priority_level: 'Priorité',
+      },
+      en: {
+        page_title: 'SEO Sitemap Audit Tool | XML Sitemap, Robots.txt & CSV Report',
+        meta_description: 'Audit your XML sitemap, check robots.txt, detect technical SEO issues, and export a shareable CSV report.',
+        app_title: 'SEO Sitemap Audit',
+        app_subtitle: 'Enter an XML sitemap. The tool runs the Python script in the background and generates a downloadable CSV with in-page preview and insights.',
+        label_sitemap: 'Sitemap URL',
+        label_max_urls: 'Max URLs',
+        label_workers: 'Workers',
+        label_timeout: 'Timeout (s)',
+        label_skip_robots: 'Ignore robots.txt',
+        run_btn_idle: 'Run audit',
+        run_btn_running: 'Audit running...',
+        job_section_title: 'Job status',
+        download_csv: 'Download CSV',
+        download_conflicts: 'Download conflicts',
+        copy_share_url: 'Copy report URL',
+        kpi_total: 'Pages scanned',
+        kpi_ok: 'No issues',
+        kpi_ko: 'With issues',
+        insights_title: 'Key insights',
+        logs_summary: 'Technical logs',
+        no_logs_yet: 'No logs yet.',
+        preview_title: 'CSV preview',
+        filter_issue_label: 'Issue filter',
+        filter_issue_placeholder: 'e.g. noindex',
+        filter_http_label: 'HTTP',
+        filter_indexable_label: 'Indexable',
+        filter_priority_label: 'Priority',
+        opt_all: 'All',
+        opt_not_200: 'Not 200',
+        opt_yes: 'Yes',
+        opt_no: 'No',
+        opt_all_f: 'All',
+        opt_critical: 'Critical',
+        opt_high: 'High',
+        opt_medium: 'Medium',
+        opt_low: 'Low',
+        opt_none: 'None',
+        history_title: 'History (same sitemap)',
+        history_item: '{job_id} | {date} | pages={total} | issues={issues}',
+        diff_title: 'Comparison with previous scan: {job_id}',
+        diff_new_issue_urls: 'New URLs with issues',
+        diff_resolved_issue_urls: 'Fixed URLs',
+        diff_changed_issue_urls: 'Changed problematic URLs',
+        diff_added_urls: 'Added URLs',
+        diff_removed_urls: 'Removed URLs',
+        insights_priority_critical: 'Critical',
+        insights_priority_high: 'High',
+        insights_priority_medium: 'Medium',
+        insights_priority_low: 'Low',
+        insights_priority_none: 'None',
+        insights_conflicts_label: 'Sitemap/indexation conflicts',
+        insights_top_issues: 'Top detected issues',
+        insights_top_conflict_reasons: 'Top conflict reasons',
+        insights_empty: 'No top issues detected for this sample.',
+        status_job: 'Job',
+        status_status: 'Status',
+        status_sitemap: 'Sitemap',
+        status_started: 'Started',
+        status_completed: 'Completed',
+        status_queued: 'queued',
+        status_running: 'running',
+        status_completed_value: 'completed',
+        status_failed: 'failed',
+        status_unknown: 'unknown',
+        table_empty: 'Empty report.',
+        table_no_issue: 'None',
+        table_more_issues: '+{count} more',
+        table_indexable_yes: 'Yes',
+        table_indexable_no: 'No',
+        preview_loading: 'Loading preview...',
+        preview_error_fallback: 'Preview error',
+        status_error_fallback: 'Status error',
+        audit_starting: 'Starting job...',
+        logs_waiting: 'Waiting for logs...',
+        api_audit_error: 'Audit API error',
+        share_unavailable: 'Share link is not available yet.',
+        share_copied: 'Share URL copied to clipboard.',
+        share_copy_failed: 'Could not copy automatically. URL: {url}',
+        shared_loading_report: 'Loading shared report...',
+        shared_loading_logs: 'Loading logs...',
+        preview_meta_truncated: '{displayed} filtered rows out of {loaded} loaded ({total} total in CSV).',
+        preview_meta_full: '{displayed} filtered rows out of {loaded}.',
+        header_final_url: 'Final URL',
+        header_load_ms: 'Load (ms)',
+        header_is_indexable: 'Indexable',
+        header_meta_description_length: 'Meta desc. (len)',
+        header_priority_score: 'Priority score',
+        header_priority_level: 'Priority',
+      }
+    };
+
+    function t(key, vars = {}) {
+      const dict = I18N[currentLang] || I18N.fr;
+      let text = dict[key] ?? I18N.fr[key] ?? key;
+      Object.keys(vars).forEach((name) => {
+        text = text.replaceAll(`{${name}}`, String(vars[name]));
+      });
+      return text;
+    }
+
+    function detectInitialLang() {
+      const paramLang = (new URLSearchParams(window.location.search).get('lang') || '').toLowerCase();
+      if (paramLang === 'fr' || paramLang === 'en') return paramLang;
+      return navigator.language && navigator.language.toLowerCase().startsWith('en') ? 'en' : 'fr';
+    }
+
+    function localizeStatus(status) {
+      const raw = String(status || '').toLowerCase();
+      if (raw === 'queued') return t('status_queued');
+      if (raw === 'running') return t('status_running');
+      if (raw === 'completed') return t('status_completed_value');
+      if (raw === 'failed') return t('status_failed');
+      return t('status_unknown');
+    }
+
+    function applyTranslations() {
+      document.documentElement.lang = currentLang;
+      document.title = t('page_title');
+      if (metaDescriptionTag) {
+        metaDescriptionTag.setAttribute('content', t('meta_description'));
+      }
+      appTitle.textContent = t('app_title');
+      appSubtitle.textContent = t('app_subtitle');
+      labelSitemap.textContent = t('label_sitemap');
+      labelMaxUrls.textContent = t('label_max_urls');
+      labelWorkers.textContent = t('label_workers');
+      labelTimeout.textContent = t('label_timeout');
+      labelSkipRobotsText.textContent = t('label_skip_robots');
+      jobSectionTitle.textContent = t('job_section_title');
+      downloadLink.textContent = t('download_csv');
+      conflictsDownloadLink.textContent = t('download_conflicts');
+      shareReportBtn.textContent = t('copy_share_url');
+      kpiTotalLabel.textContent = t('kpi_total');
+      kpiOkLabel.textContent = t('kpi_ok');
+      kpiKoLabel.textContent = t('kpi_ko');
+      insightsTitle.textContent = t('insights_title');
+      logsSummary.textContent = t('logs_summary');
+      previewTitle.textContent = t('preview_title');
+      filterIssueLabel.textContent = t('filter_issue_label');
+      filterIssue.placeholder = t('filter_issue_placeholder');
+      filterHttpLabel.textContent = t('filter_http_label');
+      filterIndexableLabel.textContent = t('filter_indexable_label');
+      filterPriorityLabel.textContent = t('filter_priority_label');
+      filterStatus.querySelector('option[value="all"]').textContent = t('opt_all');
+      filterStatus.querySelector('option[value="not-200"]').textContent = t('opt_not_200');
+      filterIndexable.querySelector('option[value="all"]').textContent = t('opt_all');
+      filterIndexable.querySelector('option[value="true"]').textContent = t('opt_yes');
+      filterIndexable.querySelector('option[value="false"]').textContent = t('opt_no');
+      filterPriority.querySelector('option[value="all"]').textContent = t('opt_all_f');
+      filterPriority.querySelector('option[value="critical"]').textContent = t('opt_critical');
+      filterPriority.querySelector('option[value="high"]').textContent = t('opt_high');
+      filterPriority.querySelector('option[value="medium"]').textContent = t('opt_medium');
+      filterPriority.querySelector('option[value="low"]').textContent = t('opt_low');
+      filterPriority.querySelector('option[value="none"]').textContent = t('opt_none');
+      langFrBtn.classList.toggle('active', currentLang === 'fr');
+      langEnBtn.classList.toggle('active', currentLang === 'en');
+      setRunningState(runBtn.disabled);
+      if (latestStatusPayload) {
+        renderStatus(latestStatusPayload);
+      } else if (!logTail.textContent.trim()) {
+        logTail.textContent = t('no_logs_yet');
+      }
+      applyPreviewFilters();
+    }
+
+    function setLang(lang, syncUrl = true) {
+      if (lang !== 'fr' && lang !== 'en') return;
+      currentLang = lang;
+      applyTranslations();
+      if (syncUrl) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('lang', currentLang);
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
 
     function isValidJobId(value) {
       return /^[a-f0-9]{20}$/i.test(String(value || '').trim());
@@ -636,6 +969,7 @@
     function buildShareUrl(jobId) {
       const url = new URL(window.location.href);
       url.searchParams.set('job_id', jobId);
+      url.searchParams.set('lang', currentLang);
       return url.toString();
     }
 
@@ -665,13 +999,14 @@
       if (syncAddressBar) {
         const url = new URL(window.location.href);
         url.searchParams.set('job_id', jobId);
+        url.searchParams.set('lang', currentLang);
         window.history.replaceState({}, '', url.toString());
       }
     }
 
     function setRunningState(running) {
       runBtn.disabled = running;
-      runBtn.textContent = running ? 'Audit en cours...' : 'Lancer l’audit';
+      runBtn.textContent = running ? t('run_btn_running') : t('run_btn_idle');
     }
 
     function clearPreview() {
@@ -703,11 +1038,11 @@
 
       const d = scanDiff.diff;
       const metrics = [
-        { label: 'Nouvelles URLs avec problèmes', value: Number(d.new_issue_urls || 0) },
-        { label: 'URLs corrigées', value: Number(d.resolved_issue_urls || 0) },
-        { label: 'URLs avec problèmes modifiés', value: Number(d.changed_issue_urls || 0) },
-        { label: 'URLs ajoutées', value: Number(d.added_urls || 0) },
-        { label: 'URLs supprimées', value: Number(d.removed_urls || 0) }
+        { label: t('diff_new_issue_urls'), value: Number(d.new_issue_urls || 0) },
+        { label: t('diff_resolved_issue_urls'), value: Number(d.resolved_issue_urls || 0) },
+        { label: t('diff_changed_issue_urls'), value: Number(d.changed_issue_urls || 0) },
+        { label: t('diff_added_urls'), value: Number(d.added_urls || 0) },
+        { label: t('diff_removed_urls'), value: Number(d.removed_urls || 0) }
       ];
 
       diffBox.style.display = 'block';
@@ -715,7 +1050,7 @@
 
       const title = document.createElement('strong');
       title.className = 'diff-title';
-      title.textContent = `Comparaison avec le scan précédent: ${scanDiff.previous_job_id || 'N/A'}`;
+      title.textContent = t('diff_title', { job_id: scanDiff.previous_job_id || 'N/A' });
       diffBox.appendChild(title);
 
       const grid = document.createElement('div');
@@ -750,14 +1085,19 @@
 
       historyBox.innerHTML = '';
       const title = document.createElement('strong');
-      title.textContent = 'Historique (même sitemap)';
+      title.textContent = t('history_title');
       const list = document.createElement('ul');
       list.className = 'history-list';
 
       runs.slice(0, 8).forEach((run) => {
         const li = document.createElement('li');
         const sum = run.summary || {};
-        li.textContent = `${run.job_id} | ${run.completed_at || run.created_at || ''} | pages=${sum.total || 0} | issues=${sum.with_issues || 0}`;
+        li.textContent = t('history_item', {
+          job_id: run.job_id || '',
+          date: run.completed_at || run.created_at || '',
+          total: sum.total || 0,
+          issues: sum.with_issues || 0
+        });
         list.appendChild(li);
       });
 
@@ -781,11 +1121,11 @@
       topIssuesBox.innerHTML = '';
 
       const priorityItems = [
-        { label: 'Critique', key: 'critical', className: 'insight-chip-critical' },
-        { label: 'Haute', key: 'high', className: 'insight-chip-high' },
-        { label: 'Moyenne', key: 'medium', className: 'insight-chip-medium' },
-        { label: 'Basse', key: 'low', className: 'insight-chip-low' },
-        { label: 'Aucune', key: 'none', className: 'insight-chip-none' }
+        { label: t('insights_priority_critical'), key: 'critical', className: 'insight-chip-critical' },
+        { label: t('insights_priority_high'), key: 'high', className: 'insight-chip-high' },
+        { label: t('insights_priority_medium'), key: 'medium', className: 'insight-chip-medium' },
+        { label: t('insights_priority_low'), key: 'low', className: 'insight-chip-low' },
+        { label: t('insights_priority_none'), key: 'none', className: 'insight-chip-none' }
       ];
 
       priorityItems.forEach((item) => {
@@ -809,7 +1149,7 @@
       conflictsLi.className = 'insight-chip insight-chip-conflicts';
       const conflictsLabel = document.createElement('span');
       conflictsLabel.className = 'insight-chip-label';
-      conflictsLabel.textContent = 'Conflits sitemap/indexation';
+      conflictsLabel.textContent = t('insights_conflicts_label');
       const conflictsValue = document.createElement('span');
       conflictsValue.className = 'insight-chip-value';
       conflictsValue.textContent = String(Number(insights.conflicts_count || 0));
@@ -848,7 +1188,7 @@
 
         return Array.from(grouped.values()).sort((a, b) => {
           if (b.count !== a.count) return b.count - a.count;
-          return a.label.localeCompare(b.label, 'fr');
+          return a.label.localeCompare(b.label, currentLang);
         });
       }
 
@@ -894,29 +1234,30 @@
         topIssuesBox.appendChild(group);
       }
 
-      appendTagGroup('Top problèmes détectés', topIssues, 'issue', true);
-      appendTagGroup('Top causes de conflit', topConflictReasons, 'reason');
+      appendTagGroup(t('insights_top_issues'), topIssues, 'issue', true);
+      appendTagGroup(t('insights_top_conflict_reasons'), topConflictReasons, 'reason');
       if (!topIssuesBox.children.length) {
         const empty = document.createElement('div');
         empty.className = 'muted';
-        empty.textContent = 'Aucun top problème détecté sur cet échantillon.';
+        empty.textContent = t('insights_empty');
         topIssuesBox.appendChild(empty);
       }
     }
 
     function renderStatus(payload) {
+      latestStatusPayload = payload;
       const parts = [
-        `Job: ${payload.job_id}`,
-        `Statut: ${payload.status}`,
-        payload.sitemap ? `Sitemap: ${payload.sitemap}` : '',
-        payload.started_at ? `Début: ${payload.started_at}` : '',
-        payload.completed_at ? `Fin: ${payload.completed_at}` : ''
+        `${t('status_job')}: ${payload.job_id}`,
+        `${t('status_status')}: ${localizeStatus(payload.status)}`,
+        payload.sitemap ? `${t('status_sitemap')}: ${payload.sitemap}` : '',
+        payload.started_at ? `${t('status_started')}: ${payload.started_at}` : '',
+        payload.completed_at ? `${t('status_completed')}: ${payload.completed_at}` : ''
       ].filter(Boolean);
       statusBox.textContent = parts.join('\n');
       updateShareTarget(payload.job_id);
 
       const logLines = Array.isArray(payload.log_tail) ? payload.log_tail : [];
-      logTail.textContent = logLines.length ? logLines.join('\n') : 'Aucun log pour le moment.';
+      logTail.textContent = logLines.length ? logLines.join('\n') : t('no_logs_yet');
 
       if (payload.status === 'completed') {
         const total = Number(payload.summary?.total || 0);
@@ -965,13 +1306,13 @@
     function prettifyHeader(header) {
       const map = {
         url: 'URL',
-        final_url: 'URL finale',
+        final_url: t('header_final_url'),
         status: 'HTTP',
-        load_ms: 'Temps (ms)',
-        is_indexable: 'Indexable',
-        meta_description_length: 'Meta desc. (len)',
-        priority_score: 'Score priorité',
-        priority_level: 'Priorité'
+        load_ms: t('header_load_ms'),
+        is_indexable: t('header_is_indexable'),
+        meta_description_length: t('header_meta_description_length'),
+        priority_score: t('header_priority_score'),
+        priority_level: t('header_priority_level')
       };
       const lower = String(header || '').toLowerCase();
       if (map[lower]) return map[lower];
@@ -998,7 +1339,7 @@
 
       const raw = String(value || '').trim();
       if (!raw) {
-        wrapper.appendChild(createBadge('Aucun', 'csv-badge-ok'));
+        wrapper.appendChild(createBadge(t('table_no_issue'), 'csv-badge-ok'));
         return wrapper;
       }
 
@@ -1015,7 +1356,7 @@
       if (issues.length > visible.length) {
         const more = document.createElement('span');
         more.className = 'issues-item';
-        more.textContent = `+${issues.length - visible.length} autres`;
+        more.textContent = t('table_more_issues', { count: issues.length - visible.length });
         more.title = issues.join(' | ');
         wrapper.appendChild(more);
       }
@@ -1034,7 +1375,7 @@
       }
 
       if (key === 'is_indexable') {
-        return asBoolean(raw) ? createBadge('Oui', 'csv-badge-ok') : createBadge('Non', 'csv-badge-bad');
+        return asBoolean(raw) ? createBadge(t('table_indexable_yes'), 'csv-badge-ok') : createBadge(t('table_indexable_no'), 'csv-badge-bad');
       }
 
       if (key === 'priority_level') {
@@ -1066,7 +1407,7 @@
 
     function applyPreviewFilters() {
       if (!previewHeaders.length || !previewDataset.length) {
-        tableWrap.textContent = 'Rapport vide.';
+        tableWrap.textContent = t('table_empty');
         return;
       }
 
@@ -1142,8 +1483,8 @@
       const displayedRows = rows.length;
       const truncated = !!previewTruncated;
       previewMeta.textContent = truncated
-        ? `${displayedRows} lignes filtrées sur ${previewDataset.length} chargées (${previewTotalRows} total CSV).`
-        : `${displayedRows} lignes filtrées sur ${previewDataset.length}.`;
+        ? t('preview_meta_truncated', { displayed: displayedRows, loaded: previewDataset.length, total: previewTotalRows })
+        : t('preview_meta_full', { displayed: displayedRows, loaded: previewDataset.length });
     }
 
     function renderPreview(previewPayload) {
@@ -1160,13 +1501,13 @@
 
       previewCard.style.display = 'block';
       previewError.textContent = '';
-      tableWrap.textContent = 'Chargement de l’aperçu...';
+      tableWrap.textContent = t('preview_loading');
 
       try {
         const separator = previewUrl.includes('?') ? '&' : '?';
         const res = await fetch(`${previewUrl}${separator}rows=300`, { cache: 'no-store' });
         const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || 'Erreur preview');
+        if (!res.ok) throw new Error(payload.error || t('preview_error_fallback'));
 
         renderPreview(payload);
         previewLoadedFor = jobId;
@@ -1179,7 +1520,7 @@
       try {
         const res = await fetch(`status.php?job_id=${encodeURIComponent(jobId)}`, { cache: 'no-store' });
         const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || 'Erreur status');
+        if (!res.ok) throw new Error(payload.error || t('status_error_fallback'));
 
         renderStatus(payload);
         runError.textContent = payload.error || '';
@@ -1231,8 +1572,8 @@
       };
 
       setRunningState(true);
-      statusBox.textContent = 'Démarrage du job...';
-      logTail.textContent = 'En attente de logs...';
+      statusBox.textContent = t('audit_starting');
+      logTail.textContent = t('logs_waiting');
 
       try {
         const res = await fetch('audit.php', {
@@ -1242,7 +1583,7 @@
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erreur API audit');
+        if (!res.ok) throw new Error(data.error || t('api_audit_error'));
 
         renderStatus(data);
         await pollStatus(data.job_id);
@@ -1256,7 +1597,7 @@
     shareReportBtn.addEventListener('click', async () => {
       const shareUrl = String(shareReportBtn.dataset.shareUrl || '').trim();
       if (!shareUrl) {
-        setShareFeedback('Lien de partage indisponible pour le moment.', true);
+        setShareFeedback(t('share_unavailable'), true);
         return;
       }
 
@@ -1274,11 +1615,15 @@
           document.execCommand('copy');
           document.body.removeChild(ta);
         }
-        setShareFeedback('URL de partage copiée dans le presse-papiers.');
+        setShareFeedback(t('share_copied'));
       } catch (err) {
-        setShareFeedback('Impossible de copier automatiquement. URL: ' + shareUrl, true);
+        setShareFeedback(t('share_copy_failed', { url: shareUrl }), true);
       }
     });
+
+    langFrBtn.addEventListener('click', () => setLang('fr'));
+    langEnBtn.addEventListener('click', () => setLang('en'));
+    setLang(detectInitialLang(), false);
 
     (function loadSharedReportOnPageLoad() {
       const jobId = new URLSearchParams(window.location.search).get('job_id');
@@ -1295,8 +1640,8 @@
       clearInsights();
       diffBox.style.display = 'none';
       historyBox.textContent = '';
-      statusBox.textContent = 'Chargement du rapport partagé...';
-      logTail.textContent = 'Chargement des logs...';
+      statusBox.textContent = t('shared_loading_report');
+      logTail.textContent = t('shared_loading_logs');
 
       updateShareTarget(jobId, false);
 
