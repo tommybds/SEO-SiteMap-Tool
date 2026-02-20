@@ -1,0 +1,5 @@
+Options -Indexes
+
+<FilesMatch "^(lib\.php|README\.md)$">
+  Require all denied
+</FilesMatch>

@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment / local config
+.env
+.env.*
+analytics.local.js
+
+# Runtime data (generated at execution time)
+storage/jobs/*
+storage/logs/*
+storage/reports/*
+storage/state.json
+
+# Keep storage access rules in git
+!storage/.htaccess

@@ -1,0 +1,1318 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SEO Sitemap Audit</title>
+  <script src="analytics.local.js"></script>
+  <script>
+    (function initGtag() {
+      const measurementId = String(window.GTAG_MEASUREMENT_ID || '').trim();
+      if (!measurementId) return;
+
+      const gtagScript = document.createElement('script');
+      gtagScript.async = true;
+      gtagScript.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+      document.head.appendChild(gtagScript);
+
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function gtag() { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', measurementId);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #0f766e;
+      --danger: #b91c1c;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #f0fdfa 0%, var(--bg) 40%);
+      color: var(--text);
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+      margin-bottom: 16px;
+    }
+    .card.csv-full-width {
+      width: 100dvw;
+      max-width: 100dvw;
+      margin-left: calc(50% - 50dvw);
+      margin-right: calc(50% - 50dvw);
+    }
+    @supports not (width: 100dvw) {
+      .card.csv-full-width {
+        width: 100vw;
+        max-width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
+      }
+    }
+    .card.csv-full-width .table-wrap {
+      max-height: 420px;
+    }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p  { margin: 0 0 14px; color: var(--muted); }
+    form {
+      display: grid;
+      grid-template-columns: 1fr 120px 100px 100px;
+      gap: 10px;
+      align-items: end;
+    }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    input[type="url"], input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 14px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: center;
+    }
+    button {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .button-link {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      line-height: 1;
+      border: 0;
+      cursor: pointer;
+    }
+    .button-link.secondary {
+      background: #334155;
+    }
+    .danger { color: var(--danger); white-space: pre-wrap; }
+    .status {
+      padding: 10px;
+      border-radius: 8px;
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+    #status-box {
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .kpi {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+    }
+    .kpi b { display: block; font-size: 20px; }
+    .kpi span { color: var(--muted); font-size: 12px; }
+    pre {
+      margin: 8px 0 0;
+      max-height: 260px;
+      overflow: auto;
+      background: #111827;
+      color: #f9fafb;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    #result-card .row {
+      margin-bottom: 12px;
+    }
+    .download-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: auto;
+      max-height: 520px;
+      background: #fff;
+      box-shadow: inset 0 1px 0 #f1f5f9;
+    }
+    table.csv-table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 1120px;
+      font-size: 13px;
+    }
+    .csv-table th, .csv-table td {
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      text-align: left;
+      padding: 9px 10px;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    .csv-table tbody tr:nth-child(even) {
+      background: #fafafa;
+    }
+    .csv-table tbody tr:hover {
+      background: #f0f9ff;
+    }
+    .csv-table th {
+      position: sticky;
+      top: 0;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      z-index: 2;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 0.01em;
+      color: #334155;
+    }
+    .csv-table th.sort-asc::after { content: " ▲"; font-size: 10px; color: var(--muted); }
+    .csv-table th.sort-desc::after { content: " ▼"; font-size: 10px; color: var(--muted); }
+    .csv-table th:first-child,
+    .csv-table td:first-child {
+      position: sticky;
+      left: 0;
+      background: #f8fafc;
+    }
+    .csv-table th:first-child { z-index: 4; }
+    .csv-table td:first-child { z-index: 1; }
+    .csv-table td:first-child {
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .csv-table td {
+      max-width: 380px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .csv-cell {
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: top;
+    }
+    .csv-cell-wrap {
+      white-space: normal;
+      line-height: 1.35;
+      display: block;
+    }
+    .csv-cell-url {
+      color: #0f766e;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+    .csv-cell-num {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .csv-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      padding: 2px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: #f8fafc;
+      color: #334155;
+      white-space: nowrap;
+    }
+    .csv-badge-ok {
+      background: #ecfdf5;
+      border-color: #86efac;
+      color: #166534;
+    }
+    .csv-badge-warn {
+      background: #fffbeb;
+      border-color: #fcd34d;
+      color: #92400e;
+    }
+    .csv-badge-bad {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #991b1b;
+    }
+    .csv-badge-crit { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+    .csv-badge-high { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
+    .csv-badge-medium { background: #fefce8; border-color: #fde68a; color: #854d0e; }
+    .csv-badge-low { background: #ecfdf5; border-color: #86efac; color: #166534; }
+    .csv-badge-none { background: #f8fafc; border-color: #cbd5e1; color: #475569; }
+    .issues-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      white-space: normal;
+    }
+    .issues-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font-size: 11px;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 1fr 120px 140px 140px;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 14px;
+    }
+    .history-list {
+      margin: 10px 0 0;
+      padding-left: 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .insights-list {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    .insights-panel {
+      white-space: normal;
+      border: 1px solid #99f6e4;
+      background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%);
+      padding: 14px;
+    }
+    .insights-title {
+      display: block;
+      font-size: 28px;
+      line-height: 1.1;
+      margin-bottom: 2px;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+    .insight-chip {
+      background: #ffffff;
+      border: 1px solid #d1fae5;
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-height: 64px;
+    }
+    .insight-chip-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .insight-chip-value {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      color: #0f172a;
+    }
+    .insight-chip-critical { border-left: 4px solid #dc2626; }
+    .insight-chip-high { border-left: 4px solid #ea580c; }
+    .insight-chip-medium { border-left: 4px solid #ca8a04; }
+    .insight-chip-low { border-left: 4px solid #16a34a; }
+    .insight-chip-none { border-left: 4px solid #64748b; }
+    .insight-chip-conflicts { border-left: 4px solid #0f766e; }
+    .insight-groups {
+      margin-top: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .insight-group {
+      border-top: 1px solid #bae6fd;
+      padding-top: 8px;
+    }
+    .insight-group-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #0f766e;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .issue-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .issue-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid #bfdbfe;
+      background: #ffffff;
+      font-size: 12px;
+      color: #1f2937;
+      max-width: 100%;
+    }
+    .issue-tag span {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .issue-tag b {
+      font-size: 11px;
+      color: #0f766e;
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      border-radius: 999px;
+      padding: 1px 6px;
+    }
+    .diff-panel {
+      white-space: normal;
+      border: 1px solid #c7d2fe;
+      background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+    }
+    .diff-title {
+      display: block;
+      margin-bottom: 10px;
+      color: #1e293b;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+    .diff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+    }
+    .diff-item {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .diff-item-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+    .diff-item-value {
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    details summary {
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      user-select: none;
+    }
+    @media (max-width: 860px) {
+      form { grid-template-columns: 1fr; }
+      .filter-grid { grid-template-columns: 1fr; }
+      .card.csv-full-width {
+        width: 100dvw;
+        max-width: 100dvw;
+        margin-left: calc(50% - 50dvw);
+        margin-right: calc(50% - 50dvw);
+      }
+      @supports not (width: 100dvw) {
+        .card.csv-full-width {
+          width: 100vw;
+          max-width: 100vw;
+          margin-left: calc(50% - 50vw);
+          margin-right: calc(50% - 50vw);
+        }
+      }
+      .insights-title { font-size: 22px; }
+      .insight-chip-value { font-size: 20px; }
+      .issue-tag span { max-width: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>SEO Sitemap Audit</h1>
+      <p>Entrez un sitemap XML. L’outil lance le script Python en arrière-plan et produit un CSV téléchargeable, avec aperçu et insights dans la page.</p>
+
+      <form id="audit-form">
+        <div>
+          <label for="sitemap">URL du sitemap</label>
+          <input id="sitemap" name="sitemap" type="url" placeholder="https://example.com/sitemap.xml" required>
+        </div>
+        <div>
+          <label for="max_urls">Max URLs</label>
+          <input id="max_urls" name="max_urls" type="number" min="1" max="5000" value="500">
+        </div>
+        <div>
+          <label for="workers">Workers</label>
+          <input id="workers" name="workers" type="number" min="1" max="32" value="8">
+        </div>
+        <div>
+          <label for="timeout">Timeout (s)</label>
+          <input id="timeout" name="timeout" type="number" min="5" max="60" value="15">
+        </div>
+        <div class="actions" style="grid-column: 1/-1;">
+          <label><input type="checkbox" id="skip_robots_txt" name="skip_robots_txt"> Ignorer robots.txt</label>
+          <button id="run-btn" type="submit">Lancer l’audit</button>
+        </div>
+      </form>
+      <div id="form-error" class="danger" aria-live="polite"></div>
+    </div>
+
+    <div class="card" id="result-card" style="display:none;">
+      <div class="row">
+        <strong>Suivi du job</strong>
+        <div class="download-actions">
+          <a id="download-link" class="button-link" href="#" style="display:none;">Télécharger le CSV</a>
+          <a id="conflicts-download-link" class="button-link" href="#" style="display:none;">Télécharger les conflits</a>
+          <button id="share-report-btn" class="button-link secondary" type="button" style="display:none;">Copier l’URL du rapport</button>
+        </div>
+      </div>
+      <div id="share-feedback" class="muted" style="display:none;"></div>
+      <div id="status-box" class="status"></div>
+
+      <div class="summary" id="summary" style="display:none;">
+        <div class="kpi"><b id="kpi-total">0</b><span>Pages analysées</span></div>
+        <div class="kpi"><b id="kpi-ok">0</b><span>Sans problèmes</span></div>
+        <div class="kpi"><b id="kpi-ko">0</b><span>Avec problèmes</span></div>
+      </div>
+
+      <div id="insights-box" class="status insights-panel" style="display:none;">
+        <strong class="insights-title">Insights clés</strong>
+        <ul id="insights-list" class="insights-list"></ul>
+        <div id="top-issues-box" class="insight-groups"></div>
+      </div>
+
+      <div id="run-error" class="danger" aria-live="polite"></div>
+      <div id="diff-box" class="status diff-panel" style="display:none;"></div>
+      <div id="history-box" class="muted"></div>
+
+      <details>
+        <summary>Logs techniques</summary>
+        <pre id="log-tail">Aucun log pour le moment.</pre>
+      </details>
+    </div>
+
+    <div class="card csv-full-width" id="preview-card" style="display:none;">
+      <strong>Aperçu du CSV</strong>
+      <div class="filter-grid">
+        <div>
+          <label for="filter-issue">Filtre issue</label>
+          <input id="filter-issue" type="text" placeholder="ex : noindex">
+        </div>
+        <div>
+          <label for="filter-status">HTTP</label>
+          <select id="filter-status">
+            <option value="all">Tous</option>
+            <option value="200">200</option>
+            <option value="not-200">Non 200</option>
+          </select>
+        </div>
+        <div>
+          <label for="filter-indexable">Indexable</label>
+          <select id="filter-indexable">
+            <option value="all">Tous</option>
+            <option value="true">Oui</option>
+            <option value="false">Non</option>
+          </select>
+        </div>
+        <div>
+          <label for="filter-priority">Priorité</label>
+          <select id="filter-priority">
+            <option value="all">Toutes</option>
+            <option value="critical">Critique</option>
+            <option value="high">Haute</option>
+            <option value="medium">Moyenne</option>
+            <option value="low">Basse</option>
+            <option value="none">Aucune</option>
+          </select>
+        </div>
+      </div>
+      <div id="preview-meta" class="muted"></div>
+      <div id="preview-error" class="danger" aria-live="polite"></div>
+      <div id="table-wrap" class="table-wrap"></div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('audit-form');
+    const runBtn = document.getElementById('run-btn');
+    const formError = document.getElementById('form-error');
+    const resultCard = document.getElementById('result-card');
+    const statusBox = document.getElementById('status-box');
+    const logTail = document.getElementById('log-tail');
+    const runError = document.getElementById('run-error');
+    const downloadLink = document.getElementById('download-link');
+    const conflictsDownloadLink = document.getElementById('conflicts-download-link');
+    const shareReportBtn = document.getElementById('share-report-btn');
+    const shareFeedback = document.getElementById('share-feedback');
+    const summary = document.getElementById('summary');
+    const kpiTotal = document.getElementById('kpi-total');
+    const kpiOk = document.getElementById('kpi-ok');
+    const kpiKo = document.getElementById('kpi-ko');
+    const insightsBox = document.getElementById('insights-box');
+    const insightsList = document.getElementById('insights-list');
+    const topIssuesBox = document.getElementById('top-issues-box');
+    const previewCard = document.getElementById('preview-card');
+    const previewMeta = document.getElementById('preview-meta');
+    const previewError = document.getElementById('preview-error');
+    const tableWrap = document.getElementById('table-wrap');
+    const diffBox = document.getElementById('diff-box');
+    const historyBox = document.getElementById('history-box');
+    const filterIssue = document.getElementById('filter-issue');
+    const filterStatus = document.getElementById('filter-status');
+    const filterIndexable = document.getElementById('filter-indexable');
+    const filterPriority = document.getElementById('filter-priority');
+
+    let pollTimer = null;
+    let previewLoadedFor = null;
+    let previewDataset = [];
+    let previewHeaders = [];
+    let previewTotalRows = 0;
+    let previewTruncated = false;
+    let currentSort = { key: 'priority_score', direction: 'desc' };
+
+    function isValidJobId(value) {
+      return /^[a-f0-9]{20}$/i.test(String(value || '').trim());
+    }
+
+    function buildShareUrl(jobId) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('job_id', jobId);
+      return url.toString();
+    }
+
+    function setShareFeedback(message, isError = false) {
+      if (!message) {
+        shareFeedback.style.display = 'none';
+        shareFeedback.textContent = '';
+        shareFeedback.style.color = '';
+        return;
+      }
+      shareFeedback.style.display = 'block';
+      shareFeedback.textContent = message;
+      shareFeedback.style.color = isError ? '#b91c1c' : '';
+    }
+
+    function updateShareTarget(jobId, syncAddressBar = true) {
+      if (!isValidJobId(jobId)) {
+        shareReportBtn.style.display = 'none';
+        shareReportBtn.dataset.shareUrl = '';
+        return;
+      }
+
+      const shareUrl = buildShareUrl(jobId);
+      shareReportBtn.dataset.shareUrl = shareUrl;
+      shareReportBtn.style.display = 'inline-block';
+
+      if (syncAddressBar) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('job_id', jobId);
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+
+    function setRunningState(running) {
+      runBtn.disabled = running;
+      runBtn.textContent = running ? 'Audit en cours...' : 'Lancer l’audit';
+    }
+
+    function clearPreview() {
+      previewLoadedFor = null;
+      previewCard.style.display = 'none';
+      previewMeta.textContent = '';
+      previewError.textContent = '';
+      tableWrap.textContent = '';
+      previewDataset = [];
+      previewHeaders = [];
+      previewTotalRows = 0;
+      previewTruncated = false;
+      currentSort = { key: 'priority_score', direction: 'desc' };
+    }
+
+    function clearInsights() {
+      insightsBox.style.display = 'none';
+      insightsList.innerHTML = '';
+      topIssuesBox.innerHTML = '';
+    }
+
+    function renderDiff(payload) {
+      const scanDiff = payload.scan_diff;
+      if (!scanDiff || !scanDiff.diff) {
+        diffBox.style.display = 'none';
+        diffBox.innerHTML = '';
+        return;
+      }
+
+      const d = scanDiff.diff;
+      const metrics = [
+        { label: 'Nouvelles URLs avec problèmes', value: Number(d.new_issue_urls || 0) },
+        { label: 'URLs corrigées', value: Number(d.resolved_issue_urls || 0) },
+        { label: 'URLs avec problèmes modifiés', value: Number(d.changed_issue_urls || 0) },
+        { label: 'URLs ajoutées', value: Number(d.added_urls || 0) },
+        { label: 'URLs supprimées', value: Number(d.removed_urls || 0) }
+      ];
+
+      diffBox.style.display = 'block';
+      diffBox.innerHTML = '';
+
+      const title = document.createElement('strong');
+      title.className = 'diff-title';
+      title.textContent = `Comparaison avec le scan précédent: ${scanDiff.previous_job_id || 'N/A'}`;
+      diffBox.appendChild(title);
+
+      const grid = document.createElement('div');
+      grid.className = 'diff-grid';
+
+      metrics.forEach((metric) => {
+        const item = document.createElement('div');
+        item.className = 'diff-item';
+
+        const label = document.createElement('span');
+        label.className = 'diff-item-label';
+        label.textContent = metric.label;
+
+        const value = document.createElement('span');
+        value.className = 'diff-item-value';
+        value.textContent = String(metric.value);
+
+        item.appendChild(label);
+        item.appendChild(value);
+        grid.appendChild(item);
+      });
+
+      diffBox.appendChild(grid);
+    }
+
+    function renderHistory(payload) {
+      const runs = Array.isArray(payload.recent_runs) ? payload.recent_runs : [];
+      if (!runs.length) {
+        historyBox.textContent = '';
+        return;
+      }
+
+      historyBox.innerHTML = '';
+      const title = document.createElement('strong');
+      title.textContent = 'Historique (même sitemap)';
+      const list = document.createElement('ul');
+      list.className = 'history-list';
+
+      runs.slice(0, 8).forEach((run) => {
+        const li = document.createElement('li');
+        const sum = run.summary || {};
+        li.textContent = `${run.job_id} | ${run.completed_at || run.created_at || ''} | pages=${sum.total || 0} | issues=${sum.with_issues || 0}`;
+        list.appendChild(li);
+      });
+
+      historyBox.appendChild(title);
+      historyBox.appendChild(list);
+    }
+
+    function renderInsights(payload) {
+      const insights = payload.insights || null;
+      if (!insights) {
+        clearInsights();
+        return;
+      }
+
+      const p = insights.priority_counts || {};
+      const topIssues = Array.isArray(insights.top_issues) ? insights.top_issues : [];
+      const topConflictReasons = Array.isArray(insights.top_conflict_reasons) ? insights.top_conflict_reasons : [];
+
+      insightsBox.style.display = 'block';
+      insightsList.innerHTML = '';
+      topIssuesBox.innerHTML = '';
+
+      const priorityItems = [
+        { label: 'Critique', key: 'critical', className: 'insight-chip-critical' },
+        { label: 'Haute', key: 'high', className: 'insight-chip-high' },
+        { label: 'Moyenne', key: 'medium', className: 'insight-chip-medium' },
+        { label: 'Basse', key: 'low', className: 'insight-chip-low' },
+        { label: 'Aucune', key: 'none', className: 'insight-chip-none' }
+      ];
+
+      priorityItems.forEach((item) => {
+        const li = document.createElement('li');
+        li.className = `insight-chip ${item.className}`;
+
+        const label = document.createElement('span');
+        label.className = 'insight-chip-label';
+        label.textContent = item.label;
+
+        const value = document.createElement('span');
+        value.className = 'insight-chip-value';
+        value.textContent = String(Number(p[item.key] || 0));
+
+        li.appendChild(label);
+        li.appendChild(value);
+        insightsList.appendChild(li);
+      });
+
+      const conflictsLi = document.createElement('li');
+      conflictsLi.className = 'insight-chip insight-chip-conflicts';
+      const conflictsLabel = document.createElement('span');
+      conflictsLabel.className = 'insight-chip-label';
+      conflictsLabel.textContent = 'Conflits sitemap/indexation';
+      const conflictsValue = document.createElement('span');
+      conflictsValue.className = 'insight-chip-value';
+      conflictsValue.textContent = String(Number(insights.conflicts_count || 0));
+      conflictsLi.appendChild(conflictsLabel);
+      conflictsLi.appendChild(conflictsValue);
+      insightsList.appendChild(conflictsLi);
+
+      function normalizeInsightLabel(label) {
+        const raw = String(label || 'N/A').trim();
+        const normalized = raw.replace(/\s*\((?:\d+[^)]*)\)\s*$/i, '').trim();
+        return normalized || raw;
+      }
+
+      function groupSimilarRows(rows, textKey) {
+        const grouped = new Map();
+
+        rows.forEach((row) => {
+          const original = String(row[textKey] || 'N/A').trim();
+          const normalized = normalizeInsightLabel(original);
+          const count = Number(row.count || 0);
+          const existing = grouped.get(normalized);
+
+          if (existing) {
+            existing.count += count;
+            if (!existing.variants.includes(original)) {
+              existing.variants.push(original);
+            }
+          } else {
+            grouped.set(normalized, {
+              label: normalized,
+              count,
+              variants: [original]
+            });
+          }
+        });
+
+        return Array.from(grouped.values()).sort((a, b) => {
+          if (b.count !== a.count) return b.count - a.count;
+          return a.label.localeCompare(b.label, 'fr');
+        });
+      }
+
+      function appendTagGroup(title, rows, textKey, groupSimilar = false) {
+        if (!rows.length) return;
+
+        const displayRows = groupSimilar ? groupSimilarRows(rows, textKey) : rows.map((row) => ({
+          label: String(row[textKey] || 'N/A'),
+          count: Number(row.count || 0),
+          variants: [String(row[textKey] || 'N/A')]
+        }));
+
+        if (!displayRows.length) return;
+
+        const group = document.createElement('div');
+        group.className = 'insight-group';
+
+        const heading = document.createElement('div');
+        heading.className = 'insight-group-title';
+        heading.textContent = title;
+        group.appendChild(heading);
+
+        const tags = document.createElement('div');
+        tags.className = 'issue-tags';
+
+        displayRows.slice(0, 10).forEach((row) => {
+          const tag = document.createElement('span');
+          tag.className = 'issue-tag';
+
+          const text = document.createElement('span');
+          text.textContent = row.label;
+          text.title = row.variants.join(' · ');
+
+          const count = document.createElement('b');
+          count.textContent = String(Number(row.count || 0));
+
+          tag.appendChild(text);
+          tag.appendChild(count);
+          tags.appendChild(tag);
+        });
+
+        group.appendChild(tags);
+        topIssuesBox.appendChild(group);
+      }
+
+      appendTagGroup('Top problèmes détectés', topIssues, 'issue', true);
+      appendTagGroup('Top causes de conflit', topConflictReasons, 'reason');
+      if (!topIssuesBox.children.length) {
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.textContent = 'Aucun top problème détecté sur cet échantillon.';
+        topIssuesBox.appendChild(empty);
+      }
+    }
+
+    function renderStatus(payload) {
+      const parts = [
+        `Job: ${payload.job_id}`,
+        `Statut: ${payload.status}`,
+        payload.sitemap ? `Sitemap: ${payload.sitemap}` : '',
+        payload.started_at ? `Début: ${payload.started_at}` : '',
+        payload.completed_at ? `Fin: ${payload.completed_at}` : ''
+      ].filter(Boolean);
+      statusBox.textContent = parts.join('\n');
+      updateShareTarget(payload.job_id);
+
+      const logLines = Array.isArray(payload.log_tail) ? payload.log_tail : [];
+      logTail.textContent = logLines.length ? logLines.join('\n') : 'Aucun log pour le moment.';
+
+      if (payload.status === 'completed') {
+        const total = Number(payload.summary?.total || 0);
+        const withIssues = Number(payload.summary?.with_issues || 0);
+        const withoutIssues = Number(payload.summary?.without_issues || 0);
+        summary.style.display = 'grid';
+        kpiTotal.textContent = String(total);
+        kpiOk.textContent = String(withoutIssues);
+        kpiKo.textContent = String(withIssues);
+      }
+
+      if (payload.report_exists) {
+        downloadLink.style.display = 'inline-block';
+        downloadLink.href = payload.download_url;
+      }
+      if (payload.conflicts_report_exists) {
+        conflictsDownloadLink.style.display = 'inline-block';
+        conflictsDownloadLink.href = payload.conflicts_download_url;
+      } else {
+        conflictsDownloadLink.style.display = 'none';
+      }
+
+      renderInsights(payload);
+      renderDiff(payload);
+      renderHistory(payload);
+    }
+
+    function parseSortableValue(value) {
+      const raw = String(value ?? '').trim();
+      if (raw === '') return '';
+      const num = Number(raw);
+      if (!Number.isNaN(num)) return num;
+      return raw.toLowerCase();
+    }
+
+    function sortRows(rows, key, direction) {
+      const factor = direction === 'asc' ? 1 : -1;
+      rows.sort((a, b) => {
+        const av = parseSortableValue(a[key]);
+        const bv = parseSortableValue(b[key]);
+        if (av === bv) return 0;
+        return av > bv ? factor : -factor;
+      });
+    }
+
+    function prettifyHeader(header) {
+      const map = {
+        url: 'URL',
+        final_url: 'URL finale',
+        status: 'HTTP',
+        load_ms: 'Temps (ms)',
+        is_indexable: 'Indexable',
+        meta_description_length: 'Meta desc. (len)',
+        priority_score: 'Score priorité',
+        priority_level: 'Priorité'
+      };
+      const lower = String(header || '').toLowerCase();
+      if (map[lower]) return map[lower];
+      return String(header || '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    function asBoolean(value) {
+      const raw = String(value ?? '').toLowerCase();
+      return raw === 'true' || raw === '1' || raw === 'yes';
+    }
+
+    function createBadge(text, className = '') {
+      const badge = document.createElement('span');
+      badge.className = `csv-badge ${className}`.trim();
+      badge.textContent = text;
+      return badge;
+    }
+
+    function buildIssuesCell(value) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'issues-list';
+
+      const raw = String(value || '').trim();
+      if (!raw) {
+        wrapper.appendChild(createBadge('Aucun', 'csv-badge-ok'));
+        return wrapper;
+      }
+
+      const issues = raw.split('|').map((part) => part.trim()).filter(Boolean);
+      const visible = issues.slice(0, 4);
+      visible.forEach((issue) => {
+        const item = document.createElement('span');
+        item.className = 'issues-item';
+        item.textContent = issue;
+        item.title = issue;
+        wrapper.appendChild(item);
+      });
+
+      if (issues.length > visible.length) {
+        const more = document.createElement('span');
+        more.className = 'issues-item';
+        more.textContent = `+${issues.length - visible.length} autres`;
+        more.title = issues.join(' | ');
+        wrapper.appendChild(more);
+      }
+      return wrapper;
+    }
+
+    function buildCellContent(header, value) {
+      const key = String(header || '').toLowerCase();
+      const raw = String(value ?? '');
+
+      if (key === 'status') {
+        const statusNum = Number(raw);
+        if (statusNum >= 200 && statusNum < 300) return createBadge(raw, 'csv-badge-ok');
+        if (statusNum >= 300 && statusNum < 400) return createBadge(raw, 'csv-badge-warn');
+        return createBadge(raw || '-', 'csv-badge-bad');
+      }
+
+      if (key === 'is_indexable') {
+        return asBoolean(raw) ? createBadge('Oui', 'csv-badge-ok') : createBadge('Non', 'csv-badge-bad');
+      }
+
+      if (key === 'priority_level') {
+        const level = raw.toLowerCase() || 'none';
+        const classByLevel = {
+          critical: 'csv-badge-crit',
+          high: 'csv-badge-high',
+          medium: 'csv-badge-medium',
+          low: 'csv-badge-low',
+          none: 'csv-badge-none'
+        };
+        return createBadge(raw || 'none', classByLevel[level] || 'csv-badge-none');
+      }
+
+      if (key === 'issues') {
+        return buildIssuesCell(raw);
+      }
+
+      const span = document.createElement('span');
+      span.className = 'csv-cell';
+      span.textContent = raw;
+      span.title = raw;
+
+      if (key.endsWith('_url') || key === 'url') span.classList.add('csv-cell-url');
+      if (/^-?\d+(\.\d+)?$/.test(raw)) span.classList.add('csv-cell-num');
+      if (key.includes('description') || key === 'title' || key === 'h1') span.classList.add('csv-cell-wrap');
+      return span;
+    }
+
+    function applyPreviewFilters() {
+      if (!previewHeaders.length || !previewDataset.length) {
+        tableWrap.textContent = 'Rapport vide.';
+        return;
+      }
+
+      const issueNeedle = (filterIssue.value || '').trim().toLowerCase();
+      const httpFilter = filterStatus.value;
+      const indexableFilter = filterIndexable.value;
+      const priorityFilter = filterPriority.value;
+
+      const rows = previewDataset.filter((row) => {
+        const issues = String(row.issues || '').toLowerCase();
+        if (issueNeedle && !issues.includes(issueNeedle)) return false;
+
+        const statusNum = Number(String(row.status || ''));
+        if (httpFilter === '200' && statusNum !== 200) return false;
+        if (httpFilter === 'not-200' && statusNum === 200) return false;
+
+        const indexRaw = String(row.is_indexable || '').toLowerCase();
+        const isIndexable = indexRaw === 'true' || indexRaw === '1';
+        if (indexableFilter === 'true' && !isIndexable) return false;
+        if (indexableFilter === 'false' && isIndexable) return false;
+
+        const priority = String(row.priority_level || 'none').toLowerCase();
+        if (priorityFilter !== 'all' && priority !== priorityFilter) return false;
+
+        return true;
+      });
+
+      if (currentSort.key && previewHeaders.includes(currentSort.key)) {
+        sortRows(rows, currentSort.key, currentSort.direction);
+      }
+
+      const table = document.createElement('table');
+      table.className = 'csv-table';
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+
+      previewHeaders.forEach((header) => {
+        const th = document.createElement('th');
+        th.textContent = prettifyHeader(header);
+        th.title = header;
+        if (header === currentSort.key) {
+          th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+        th.addEventListener('click', () => {
+          if (currentSort.key === header) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+          } else {
+            currentSort = { key: header, direction: 'asc' };
+          }
+          applyPreviewFilters();
+        });
+        headRow.appendChild(th);
+      });
+
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        previewHeaders.forEach((header) => {
+          const td = document.createElement('td');
+          td.appendChild(buildCellContent(header, row[header]));
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      tableWrap.innerHTML = '';
+      tableWrap.appendChild(table);
+
+      const displayedRows = rows.length;
+      const truncated = !!previewTruncated;
+      previewMeta.textContent = truncated
+        ? `${displayedRows} lignes filtrées sur ${previewDataset.length} chargées (${previewTotalRows} total CSV).`
+        : `${displayedRows} lignes filtrées sur ${previewDataset.length}.`;
+    }
+
+    function renderPreview(previewPayload) {
+      const preview = previewPayload.preview || {};
+      previewHeaders = Array.isArray(preview.headers) ? preview.headers : [];
+      previewDataset = Array.isArray(preview.rows) ? preview.rows : [];
+      previewTotalRows = Number(preview.total_rows || previewDataset.length);
+      previewTruncated = !!preview.truncated;
+      applyPreviewFilters();
+    }
+
+    async function loadPreview(previewUrl, jobId) {
+      if (!previewUrl || previewLoadedFor === jobId) return;
+
+      previewCard.style.display = 'block';
+      previewError.textContent = '';
+      tableWrap.textContent = 'Chargement de l’aperçu...';
+
+      try {
+        const separator = previewUrl.includes('?') ? '&' : '?';
+        const res = await fetch(`${previewUrl}${separator}rows=300`, { cache: 'no-store' });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'Erreur preview');
+
+        renderPreview(payload);
+        previewLoadedFor = jobId;
+      } catch (err) {
+        previewError.textContent = err.message || String(err);
+      }
+    }
+
+    async function pollStatus(jobId) {
+      try {
+        const res = await fetch(`status.php?job_id=${encodeURIComponent(jobId)}`, { cache: 'no-store' });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'Erreur status');
+
+        renderStatus(payload);
+        runError.textContent = payload.error || '';
+
+        if (payload.status === 'completed') {
+          await loadPreview(payload.preview_url, payload.job_id);
+        }
+
+        if (payload.status === 'completed' || payload.status === 'failed') {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          setRunningState(false);
+        }
+      } catch (err) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        setRunningState(false);
+        runError.textContent = err.message || String(err);
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      formError.textContent = '';
+      runError.textContent = '';
+      setShareFeedback('');
+      summary.style.display = 'none';
+      downloadLink.style.display = 'none';
+      conflictsDownloadLink.style.display = 'none';
+      shareReportBtn.style.display = 'none';
+      shareReportBtn.dataset.shareUrl = '';
+      resultCard.style.display = 'block';
+      clearPreview();
+      clearInsights();
+      diffBox.style.display = 'none';
+      historyBox.textContent = '';
+
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+
+      const payload = {
+        sitemap: document.getElementById('sitemap').value.trim(),
+        max_urls: Number(document.getElementById('max_urls').value || 500),
+        workers: Number(document.getElementById('workers').value || 8),
+        timeout: Number(document.getElementById('timeout').value || 15),
+        skip_robots_txt: document.getElementById('skip_robots_txt').checked
+      };
+
+      setRunningState(true);
+      statusBox.textContent = 'Démarrage du job...';
+      logTail.textContent = 'En attente de logs...';
+
+      try {
+        const res = await fetch('audit.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur API audit');
+
+        renderStatus(data);
+        await pollStatus(data.job_id);
+        pollTimer = setInterval(() => pollStatus(data.job_id), 2500);
+      } catch (err) {
+        setRunningState(false);
+        formError.textContent = err.message || String(err);
+      }
+    });
+
+    shareReportBtn.addEventListener('click', async () => {
+      const shareUrl = String(shareReportBtn.dataset.shareUrl || '').trim();
+      if (!shareUrl) {
+        setShareFeedback('Lien de partage indisponible pour le moment.', true);
+        return;
+      }
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(shareUrl);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = shareUrl;
+          ta.setAttribute('readonly', 'readonly');
+          ta.style.position = 'fixed';
+          ta.style.top = '-1000px';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        setShareFeedback('URL de partage copiée dans le presse-papiers.');
+      } catch (err) {
+        setShareFeedback('Impossible de copier automatiquement. URL: ' + shareUrl, true);
+      }
+    });
+
+    (function loadSharedReportOnPageLoad() {
+      const jobId = new URLSearchParams(window.location.search).get('job_id');
+      if (!isValidJobId(jobId || '')) return;
+
+      resultCard.style.display = 'block';
+      formError.textContent = '';
+      runError.textContent = '';
+      setShareFeedback('');
+      summary.style.display = 'none';
+      downloadLink.style.display = 'none';
+      conflictsDownloadLink.style.display = 'none';
+      clearPreview();
+      clearInsights();
+      diffBox.style.display = 'none';
+      historyBox.textContent = '';
+      statusBox.textContent = 'Chargement du rapport partagé...';
+      logTail.textContent = 'Chargement des logs...';
+
+      updateShareTarget(jobId, false);
+
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+
+      pollStatus(jobId);
+      pollTimer = setInterval(() => pollStatus(jobId), 2500);
+    })();
+
+    [filterIssue, filterStatus, filterIndexable, filterPriority].forEach((el) => {
+      el.addEventListener('input', applyPreviewFilters);
+      el.addEventListener('change', applyPreviewFilters);
+    });
+  </script>
+</body>
+</html>
