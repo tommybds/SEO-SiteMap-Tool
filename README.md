@@ -4,6 +4,10 @@
 
 Outil web prêt à déployer sur Plesk pour auditer un sitemap XML, analyser les pages, générer des rapports CSV et visualiser les résultats directement dans l’interface.
 
+### Démo
+
+- [https://tools.tommy-bordas.fr/](https://tools.tommy-bordas.fr/)
+
 ### Fonctionnalités
 
 - Scan récursif des sitemaps (`sitemapindex` + `urlset`)
@@ -79,6 +83,10 @@ Outil web prêt à déployer sur Plesk pour auditer un sitemap XML, analyser les
 ## EN
 
 Deploy-ready web tool for Plesk to audit XML sitemaps, crawl pages, generate CSV reports, and display actionable SEO insights in the UI.
+
+### Demo
+
+- [https://tools.tommy-bordas.fr/](https://tools.tommy-bordas.fr/)
 
 ### Features
 
