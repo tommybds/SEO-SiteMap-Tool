@@ -494,6 +494,20 @@
       font-size: 13px;
       user-select: none;
     }
+    .app-footer {
+      margin: 18px 0 4px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .app-footer a {
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .app-footer a:hover {
+      text-decoration: underline;
+    }
     @media (max-width: 860px) {
       form { grid-template-columns: 1fr; }
       .filter-grid { grid-template-columns: 1fr; }
@@ -631,6 +645,11 @@
       <div id="preview-error" class="danger" aria-live="polite"></div>
       <div id="table-wrap" class="table-wrap"></div>
     </div>
+
+    <footer class="app-footer">
+      <span id="footer-credit-prefix">Créé par</span>
+      <a href="https://tommy-bordas.fr" target="_blank" rel="noopener noreferrer">tommy-bordas.fr</a>
+    </footer>
   </div>
 
   <script>
@@ -683,6 +702,7 @@
     const filterHttpLabel = document.getElementById('filter-http-label');
     const filterIndexableLabel = document.getElementById('filter-indexable-label');
     const filterPriorityLabel = document.getElementById('filter-priority-label');
+    const footerCreditPrefix = document.getElementById('footer-credit-prefix');
 
     let pollTimer = null;
     let previewLoadedFor = null;
@@ -784,6 +804,7 @@
         header_meta_description_length: 'Meta desc. (len)',
         header_priority_score: 'Score priorité',
         header_priority_level: 'Priorité',
+        footer_credit_prefix: 'Créé par',
       },
       en: {
         page_title: 'SEO Sitemap Audit Tool | XML Sitemap, Robots.txt & CSV Report',
@@ -874,6 +895,7 @@
         header_meta_description_length: 'Meta desc. (len)',
         header_priority_score: 'Priority score',
         header_priority_level: 'Priority',
+        footer_credit_prefix: 'Built by',
       }
     };
 
@@ -940,6 +962,7 @@
       filterPriority.querySelector('option[value="medium"]').textContent = t('opt_medium');
       filterPriority.querySelector('option[value="low"]').textContent = t('opt_low');
       filterPriority.querySelector('option[value="none"]').textContent = t('opt_none');
+      footerCreditPrefix.textContent = t('footer_credit_prefix');
       langFrBtn.classList.toggle('active', currentLang === 'fr');
       langEnBtn.classList.toggle('active', currentLang === 'en');
       setRunningState(runBtn.disabled);
