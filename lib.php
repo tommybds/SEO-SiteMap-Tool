@@ -7,8 +7,19 @@ const REPORTS_DIR = STORAGE_DIR . '/reports';
 const LOGS_DIR = STORAGE_DIR . '/logs';
 const RATE_LIMIT_DIR = STORAGE_DIR . '/rate_limit';
 
+if (PHP_SAPI !== 'cli') {
+    @ini_set('display_errors', '0');
+    @ini_set('html_errors', '0');
+    if (ob_get_level() === 0) {
+        ob_start();
+    }
+}
+
 function respond_json(array $payload, int $status = 200): void
 {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -33,6 +44,12 @@ function get_json_input(): array
 
     $decoded = json_decode($raw, true);
     return is_array($decoded) ? $decoded : [];
+}
+
+function read_csv_line($handle)
+{
+    // Keep explicit escape char to avoid PHP 8.4+ deprecation warnings.
+    return fgetcsv($handle, 0, ',', '"', '\\');
 }
 
 function clamp_int(mixed $value, int $min, int $max, int $default): int
@@ -103,6 +120,11 @@ function report_path(string $jobId): string
 function conflicts_report_path(string $jobId): string
 {
     return REPORTS_DIR . '/' . $jobId . '_sitemap_indexation_conflicts.csv';
+}
+
+function mesh_result_path(string $meshId): string
+{
+    return REPORTS_DIR . '/' . $meshId . '_mesh.json';
 }
 
 function log_path(string $jobId): string
@@ -376,7 +398,7 @@ function build_csv_summary(string $path): array
         return $summary;
     }
 
-    $headers = fgetcsv($handle);
+    $headers = read_csv_line($handle);
     if (!is_array($headers)) {
         fclose($handle);
         return $summary;
@@ -384,7 +406,7 @@ function build_csv_summary(string $path): array
 
     $issuesIndex = array_search('issues', $headers, true);
 
-    while (($row = fgetcsv($handle)) !== false) {
+    while (($row = read_csv_line($handle)) !== false) {
         $summary['total']++;
         $issues = '';
         if ($issuesIndex !== false && isset($row[$issuesIndex])) {
@@ -426,7 +448,7 @@ function build_csv_insights(string $path): array
         return $insights;
     }
 
-    $headers = fgetcsv($handle);
+    $headers = read_csv_line($handle);
     if (!is_array($headers)) {
         fclose($handle);
         return $insights;
@@ -440,7 +462,7 @@ function build_csv_insights(string $path): array
     $issueCounts = [];
     $conflictReasonCounts = [];
 
-    while (($row = fgetcsv($handle)) !== false) {
+    while (($row = read_csv_line($handle)) !== false) {
         if ($priorityIdx !== false) {
             $priority = strtolower(trim((string) ($row[$priorityIdx] ?? 'none')));
             if (!isset($insights['priority_counts'][$priority])) {
@@ -519,7 +541,7 @@ function read_csv_preview(string $path, int $maxRows = 100): array
         return $result;
     }
 
-    $headers = fgetcsv($handle);
+    $headers = read_csv_line($handle);
     if (!is_array($headers)) {
         fclose($handle);
         return $result;
@@ -528,7 +550,7 @@ function read_csv_preview(string $path, int $maxRows = 100): array
     $result['headers'] = array_values(array_map(static fn($h) => (string) $h, $headers));
 
     $rowIndex = 0;
-    while (($row = fgetcsv($handle)) !== false) {
+    while (($row = read_csv_line($handle)) !== false) {
         $rowIndex++;
 
         if ($rowIndex <= $maxRows) {
@@ -577,7 +599,7 @@ function read_csv_issue_map(string $path): array
         return $map;
     }
 
-    $headers = fgetcsv($handle);
+    $headers = read_csv_line($handle);
     if (!is_array($headers)) {
         fclose($handle);
         return $map;
@@ -593,7 +615,7 @@ function read_csv_issue_map(string $path): array
         return $map;
     }
 
-    while (($row = fgetcsv($handle)) !== false) {
+    while (($row = read_csv_line($handle)) !== false) {
         $url = trim((string) ($row[$urlIdx] ?? ''));
         if ($url === '') {
             continue;
@@ -821,4 +843,34 @@ function list_recent_completed_jobs_for_sitemap(string $sitemap, int $limit = 8)
 function seo_script_path(): string
 {
     return __DIR__ . '/seo_sitemap_checker.py';
+}
+
+function internal_mesh_script_path(): string
+{
+    return __DIR__ . '/internal_link_mesh.py';
+}
+
+function write_mesh_result(string $meshId, array $payload): bool
+{
+    return file_put_contents(
+        mesh_result_path($meshId),
+        json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        LOCK_EX
+    ) !== false;
+}
+
+function read_mesh_result(string $meshId): ?array
+{
+    $path = mesh_result_path($meshId);
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $raw = file_get_contents($path);
+    if (!is_string($raw) || trim($raw) === '') {
+        return null;
+    }
+
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : null;
 }

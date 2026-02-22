@@ -16,6 +16,7 @@ Deploy-ready web tool for Plesk to audit XML sitemaps, crawl pages, generate CSV
 - Priority scoring (`priority_score`, `priority_level`)
 - Scan history + diff against previous scan
 - In-page CSV preview (sorting + filtering)
+- Internal linking mini-audit with graph visualization
 - Shareable report URL (`?job_id=...`) + copy button
 - Bilingual UI FR/EN (`?lang=fr` or `?lang=en`)
 
@@ -43,10 +44,12 @@ Deploy-ready web tool for Plesk to audit XML sitemaps, crawl pages, generate CSV
 - `audit.php`: starts audit jobs
 - `status.php`: job status/logs/summary/insights
 - `preview.php`: JSON CSV preview endpoint
+- `mesh.php`: internal linking mesh endpoint (JSON graph)
 - `download.php`: main CSV download
 - `download_conflicts.php`: conflicts CSV download
 - `lib.php`: shared helpers (security, jobs, rate-limit, parsing)
 - `seo_sitemap_checker.py`: Python audit engine
+- `internal_link_mesh.py`: Python internal-link graph engine
 - `storage/`: runtime data (jobs, logs, reports)
 
 ### Server requirements (Plesk)
