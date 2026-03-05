@@ -1073,6 +1073,152 @@
       font-size: 12px;
       line-height: 1.35;
     }
+    .redirect-flow {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .redirect-flow-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .redirect-flow-head strong {
+      display: block;
+      color: #0f172a;
+      font-size: 24px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .redirect-flow-head span {
+      display: block;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 2px;
+    }
+    .redirect-flow-chain {
+      display: grid;
+      gap: 8px;
+    }
+    .redirect-flow-step {
+      border: 1px solid #dbeafe;
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 10px 12px;
+    }
+    .redirect-flow-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .redirect-flow-url {
+      min-width: 0;
+      flex: 1 1 340px;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 700;
+      color: #0f172a;
+      word-break: break-word;
+    }
+    .redirect-flow-url .mesh-link,
+    .redirect-flow-next .mesh-link {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .redirect-flow-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #0f172a;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+    .redirect-flow-label {
+      color: #1e293b;
+      font-weight: 600;
+    }
+    .redirect-http-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 54px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .redirect-http-badge.permanent {
+      background: #ecfdf5;
+      border-color: #86efac;
+      color: #166534;
+    }
+    .redirect-http-badge.temporary {
+      background: #fffbeb;
+      border-color: #fcd34d;
+      color: #92400e;
+    }
+    .redirect-http-badge.success {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+    .redirect-http-badge.error {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #991b1b;
+    }
+    .redirect-http-badge.neutral {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
+    .redirect-flow-next {
+      margin-top: 8px;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .redirect-flow-next span {
+      font-weight: 700;
+    }
+    .redirect-flow-arrow {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 36px;
+      line-height: 1;
+      margin: 2px 0 1px;
+      user-select: none;
+    }
+    .redirect-tech-details {
+      margin-bottom: 10px;
+    }
+    .redirect-tech-details > summary {
+      cursor: pointer;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 700;
+      user-select: none;
+      margin-bottom: 6px;
+    }
+    .redirect-tech-details[open] > summary {
+      margin-bottom: 8px;
+    }
+    .redirect-tech-details .status {
+      margin: 0;
+      white-space: pre-wrap;
+    }
     .tech-checks {
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -1244,4 +1390,8 @@
       .insight-chip-value { font-size: 20px; }
       .issue-tag span { max-width: 180px; }
       .domain-grid { grid-template-columns: 1fr; }
+      .redirect-flow-head strong { font-size: 20px; }
+      .redirect-flow-url,
+      .redirect-flow-status { font-size: 16px; }
+      .redirect-flow-arrow { font-size: 30px; }
     }

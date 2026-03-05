@@ -42,10 +42,12 @@
     const techSectionTitle = document.getElementById('tech-section-title');
     const redirectSectionTitle = document.getElementById('redirect-section-title');
     const geoSectionTitle = document.getElementById('geo-section-title');
+    const redirectFlow = document.getElementById('redirect-flow');
     const meshStatusBox = document.getElementById('mesh-status-box');
     const techStatusBox = document.getElementById('tech-status-box');
     const redirectStatusBox = document.getElementById('redirect-status-box');
     const geoStatusBox = document.getElementById('geo-status-box');
+    const redirectTechDetailsSummary = document.getElementById('redirect-tech-details-summary');
     const meshInteractionHint = document.getElementById('mesh-interaction-hint');
     const shareMeshBtn = document.getElementById('share-mesh-btn');
     const shareMeshFeedback = document.getElementById('share-mesh-feedback');
@@ -243,6 +245,7 @@
       if (techSectionTitle) techSectionTitle.textContent = t('tech_section_title');
       if (redirectSectionTitle) redirectSectionTitle.textContent = t('redirect_section_title');
       if (geoSectionTitle) geoSectionTitle.textContent = t('geo_section_title');
+      if (redirectTechDetailsSummary) redirectTechDetailsSummary.textContent = t('redirect_details_summary');
       shareMeshBtn.textContent = t('share_mesh_btn');
       if (meshToggleGraphBtn) {
         meshToggleGraphBtn.textContent = meshGraphVisible ? t('mesh_graph_hide') : t('mesh_graph_show');
@@ -1187,6 +1190,12 @@
       const safeUrl = escapeHtml(url);
       const safeLabel = escapeHtml(label || abbreviatePath(url));
       return `<a class="mesh-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="${safeUrl}">${safeLabel}</a>`;
+    }
+
+    function buildFullUrlLink(url) {
+      const rawUrl = String(url || '').trim();
+      const safeUrl = escapeHtml(rawUrl);
+      return `<a class="mesh-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="${safeUrl}">${safeUrl}</a>`;
     }
 
     function buildMeshSummaryList(rows, rowRenderer) {
@@ -2572,9 +2581,10 @@
       return rows.slice(0, 12).map((step, index) => {
         const url = String(step.url || '');
         const status = Number(step.status || 0);
-        const location = String(step.location || '').trim();
-        const locationPart = location ? ` → ${escapeHtml(location)}` : '';
-        return `${index + 1}. ${buildMeshUrlLink(url)} · ${escapeHtml(String(status || '-'))}${locationPart}`;
+        const nextStep = rows[index + 1] || null;
+        const nextUrl = String(nextStep && nextStep.url ? nextStep.url : '').trim();
+        const locationPart = nextUrl ? ` → ${buildFullUrlLink(nextUrl)}` : '';
+        return `${index + 1}. ${buildFullUrlLink(url)} · ${escapeHtml(String(status || '-'))}${locationPart}`;
       }).join('<br>');
     }
 
@@ -2588,6 +2598,70 @@
         return `${statusCode} (${t('redirect_primary_temporary')})`;
       }
       return String(statusCode);
+    }
+
+    function localizeRedirectStepTitle(statusCode, isFinalStep) {
+      const code = Number(statusCode || 0);
+      if (code === 301 || code === 308) return t('redirect_step_permanent', { code });
+      if (code === 302 || code === 303 || code === 307) return t('redirect_step_temporary', { code });
+      if (code >= 200 && code < 300 && isFinalStep) return t('redirect_step_direct', { code });
+      if (code >= 200 && code < 300) return t('redirect_step_ok', { code });
+      if (code >= 400) return t('redirect_step_error', { code });
+      return t('redirect_step_status', { code: code || '-' });
+    }
+
+    function redirectStepTone(statusCode, isFinalStep) {
+      const code = Number(statusCode || 0);
+      if (code === 301 || code === 308) return 'permanent';
+      if (code === 302 || code === 303 || code === 307) return 'temporary';
+      if (code >= 200 && code < 300 && isFinalStep) return 'success';
+      if (code >= 400) return 'error';
+      return 'neutral';
+    }
+
+    function buildRedirectHeadline(primaryRedirectCode, statusCode, redirectCount) {
+      const primary = Number(primaryRedirectCode || 0);
+      if (primary === 301 || primary === 308) {
+        return t('redirect_headline_permanent', { code: primary });
+      }
+      if (primary === 302 || primary === 303 || primary === 307) {
+        return t('redirect_headline_temporary', { code: primary });
+      }
+      if (Number(redirectCount || 0) === 0 && statusCode >= 200 && statusCode < 300) {
+        return t('redirect_headline_direct', { code: statusCode });
+      }
+      return t('redirect_headline_generic');
+    }
+
+    function buildRedirectFlowHtml(chain) {
+      const rows = Array.isArray(chain) ? chain : [];
+      if (!rows.length) {
+        return `<div class="mesh-actions-empty">${escapeHtml(t('redirect_flow_empty'))}</div>`;
+      }
+
+      return rows.slice(0, 12).map((step, index, arr) => {
+        const isFinalStep = index === arr.length - 1;
+        const currentUrl = String(step && step.url ? step.url : '');
+        const statusCode = Number(step && step.status ? step.status : 0);
+        const statusLabel = localizeRedirectStepTitle(statusCode, isFinalStep);
+        const tone = redirectStepTone(statusCode, isFinalStep);
+        const nextStep = !isFinalStep ? arr[index + 1] : null;
+        const nextUrl = String(nextStep && nextStep.url ? nextStep.url : '');
+
+        return `
+          <article class="redirect-flow-step">
+            <div class="redirect-flow-row">
+              <div class="redirect-flow-url">${buildFullUrlLink(currentUrl)}</div>
+              <div class="redirect-flow-status">
+                <span class="redirect-http-badge ${escapeHtml(tone)}">${escapeHtml(String(statusCode || '-'))}</span>
+                <span class="redirect-flow-label">${escapeHtml(statusLabel)}</span>
+              </div>
+            </div>
+            ${nextUrl ? `<div class="redirect-flow-next"><span>${escapeHtml(t('redirect_flow_to'))}:</span> ${buildFullUrlLink(nextUrl)}</div>` : ''}
+          </article>
+          ${isFinalStep ? '' : '<div class="redirect-flow-arrow" aria-hidden="true">↓</div>'}
+        `;
+      }).join('');
     }
 
     function renderRedirect(audit) {
@@ -2671,6 +2745,16 @@
       if (redirectCount > 1) pushReco('redirect_reco_reduce_hops');
       if (!finalHttps || !chainHttpsOnly) pushReco('redirect_reco_enforce_https');
       if (temporaryHopCount > 0) pushReco('redirect_reco_use_301');
+
+      if (redirectFlow) {
+        redirectFlow.innerHTML = `
+          <div class="redirect-flow-head">
+            <strong>${escapeHtml(buildRedirectHeadline(primaryRedirectCode, statusCode, redirectCount))}</strong>
+            <span>${escapeHtml(t('redirect_flow_summary', { hops: redirectCount, final_status: statusCode }))}</span>
+          </div>
+          <div class="redirect-flow-chain">${buildRedirectFlowHtml(redirectChain)}</div>
+        `;
+      }
 
       redirectStatusBox.textContent = [
         `${t('redirect_status_url')}: ${requestedUrl}`,
@@ -3496,6 +3580,9 @@
       redirectFormError.textContent = '';
       redirectCard.style.display = 'block';
       redirectStatusBox.textContent = t('redirect_loading');
+      if (redirectFlow) {
+        redirectFlow.innerHTML = `<div class="mesh-actions-empty">${escapeHtml(t('redirect_loading'))}</div>`;
+      }
       redirectKpis.innerHTML = '';
       redirectChecks.innerHTML = '';
       redirectRecos.innerHTML = '';
@@ -3516,6 +3603,9 @@
         latestRedirectPayload = null;
         redirectCard.style.display = 'block';
         redirectStatusBox.textContent = t('redirect_api_error');
+        if (redirectFlow) {
+          redirectFlow.innerHTML = `<div class="danger">${escapeHtml(err.message || t('redirect_api_error'))}</div>`;
+        }
         redirectFormError.textContent = err.message || String(err);
         redirectKpis.innerHTML = '';
         redirectChecks.innerHTML = '';
