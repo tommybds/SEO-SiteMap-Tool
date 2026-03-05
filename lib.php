@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 const STORAGE_DIR = __DIR__ . '/storage';
 const JOBS_DIR = STORAGE_DIR . '/jobs';
+const MESH_JOBS_DIR = STORAGE_DIR . '/mesh_jobs';
 const REPORTS_DIR = STORAGE_DIR . '/reports';
 const LOGS_DIR = STORAGE_DIR . '/logs';
 const RATE_LIMIT_DIR = STORAGE_DIR . '/rate_limit';
@@ -22,13 +23,16 @@ function respond_json(array $payload, int $status = 200): void
     }
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
+    header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
     echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
 function ensure_storage_dirs(): void
 {
-    foreach ([STORAGE_DIR, JOBS_DIR, REPORTS_DIR, LOGS_DIR, RATE_LIMIT_DIR] as $dir) {
+    foreach ([STORAGE_DIR, JOBS_DIR, MESH_JOBS_DIR, REPORTS_DIR, LOGS_DIR, RATE_LIMIT_DIR] as $dir) {
         if (!is_dir($dir)) {
             mkdir($dir, 0775, true);
         }
@@ -107,6 +111,12 @@ function client_ip(): string
     return normalize_ip($candidate);
 }
 
+function expose_debug_details(): bool
+{
+    $raw = strtolower(trim((string) getenv('SEO_TOOL_EXPOSE_DEBUG')));
+    return in_array($raw, ['1', 'true', 'yes', 'on'], true);
+}
+
 function job_path(string $jobId): string
 {
     return JOBS_DIR . '/' . $jobId . '.json';
@@ -132,6 +142,26 @@ function log_path(string $jobId): string
     return LOGS_DIR . '/' . $jobId . '.log';
 }
 
+function mesh_job_path(string $jobId): string
+{
+    return MESH_JOBS_DIR . '/' . $jobId . '.json';
+}
+
+function mesh_output_path(string $jobId): string
+{
+    return REPORTS_DIR . '/' . $jobId . '_mesh_payload.json';
+}
+
+function mesh_progress_path(string $jobId): string
+{
+    return REPORTS_DIR . '/' . $jobId . '_mesh_progress.json';
+}
+
+function mesh_log_path(string $jobId): string
+{
+    return LOGS_DIR . '/' . $jobId . '_mesh.log';
+}
+
 function read_job(string $jobId): ?array
 {
     $path = job_path($jobId);
@@ -151,6 +181,32 @@ function read_job(string $jobId): ?array
 function write_job(string $jobId, array $data): bool
 {
     $path = job_path($jobId);
+    return file_put_contents(
+        $path,
+        json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+        LOCK_EX
+    ) !== false;
+}
+
+function read_mesh_job(string $jobId): ?array
+{
+    $path = mesh_job_path($jobId);
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $raw = file_get_contents($path);
+    if (!is_string($raw) || trim($raw) === '') {
+        return null;
+    }
+
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : null;
+}
+
+function write_mesh_job(string $jobId, array $data): bool
+{
+    $path = mesh_job_path($jobId);
     return file_put_contents(
         $path,
         json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
@@ -197,6 +253,12 @@ function validate_public_url(string $url, string &$error): bool
     $host = strtolower((string) ($parts['host'] ?? ''));
     if ($host === '') {
         $error = 'Host manquant dans l URL.';
+        return false;
+    }
+
+    $port = isset($parts['port']) ? (int) $parts['port'] : null;
+    if ($port !== null && !in_array($port, [80, 443], true)) {
+        $error = 'Port non autorise (seulement 80/443).';
         return false;
     }
 
@@ -254,6 +316,58 @@ function validate_public_url(string $url, string &$error): bool
     }
 
     return true;
+}
+
+function resolve_public_ip_for_host(string $host, string &$error): ?string
+{
+    $error = '';
+    $host = strtolower(trim($host));
+    if ($host === '') {
+        $error = 'Host manquant.';
+        return null;
+    }
+
+    if (filter_var($host, FILTER_VALIDATE_IP)) {
+        if (!is_public_ip($host)) {
+            $error = 'IP privee/reservee interdite.';
+            return null;
+        }
+        return $host;
+    }
+
+    $recordsA = dns_get_record($host, DNS_A);
+    $recordsAAAA = dns_get_record($host, DNS_AAAA);
+    $ips = [];
+
+    if (is_array($recordsA)) {
+        foreach ($recordsA as $record) {
+            if (!empty($record['ip'])) {
+                $ips[] = (string) $record['ip'];
+            }
+        }
+    }
+    if (is_array($recordsAAAA)) {
+        foreach ($recordsAAAA as $record) {
+            if (!empty($record['ipv6'])) {
+                $ips[] = (string) $record['ipv6'];
+            }
+        }
+    }
+
+    if (!$ips) {
+        $error = 'Impossible de resoudre le domaine.';
+        return null;
+    }
+
+    sort($ips, SORT_STRING);
+    foreach ($ips as $ip) {
+        if (is_public_ip($ip)) {
+            return $ip;
+        }
+    }
+
+    $error = 'Le domaine ne resolve pas vers une IP publique.';
+    return null;
 }
 
 function rate_limit_path(string $bucket, string $identifier): string
@@ -318,6 +432,40 @@ function count_active_jobs(?string $ip = null): int
 {
     $count = 0;
     $files = glob(JOBS_DIR . '/*.json') ?: [];
+
+    foreach ($files as $file) {
+        $raw = file_get_contents($file);
+        if (!is_string($raw) || $raw === '') {
+            continue;
+        }
+
+        $job = json_decode($raw, true);
+        if (!is_array($job)) {
+            continue;
+        }
+
+        $status = (string) ($job['status'] ?? '');
+        if (!in_array($status, ['queued', 'running'], true)) {
+            continue;
+        }
+
+        if ($ip !== null) {
+            $jobIp = normalize_ip((string) ($job['client_ip'] ?? ''));
+            if ($jobIp !== $ip) {
+                continue;
+            }
+        }
+
+        $count++;
+    }
+
+    return $count;
+}
+
+function count_active_mesh_jobs(?string $ip = null): int
+{
+    $count = 0;
+    $files = glob(MESH_JOBS_DIR . '/*.json') ?: [];
 
     foreach ($files as $file) {
         $raw = file_get_contents($file);
@@ -437,6 +585,26 @@ function build_csv_insights(string $path): array
         'top_issues' => [],
         'conflicts_count' => 0,
         'top_conflict_reasons' => [],
+        'domain_overview' => [
+            'totals' => [
+                'urls' => 0,
+                'indexable' => 0,
+                'non_200' => 0,
+                'redirects' => 0,
+                'robots_blocked' => 0,
+                'noindex' => 0,
+                'conflicts' => 0,
+                'canonical_cross_domain' => 0,
+                'hreflang_missing_x_default' => 0,
+            ],
+            'rates' => [
+                'indexable_pct' => 0.0,
+                'non_200_pct' => 0.0,
+                'conflicts_pct' => 0.0,
+            ],
+            'top_sections' => [],
+            'actions' => [],
+        ],
     ];
 
     if (!is_file($path)) {
@@ -456,13 +624,84 @@ function build_csv_insights(string $path): array
 
     $issuesIdx = array_search('issues', $headers, true);
     $priorityIdx = array_search('priority_level', $headers, true);
+    $priorityScoreIdx = array_search('priority_score', $headers, true);
     $conflictIdx = array_search('sitemap_indexation_conflict', $headers, true);
     $conflictReasonsIdx = array_search('sitemap_indexation_conflict_reasons', $headers, true);
+    $statusIdx = array_search('status', $headers, true);
+    $indexableIdx = array_search('is_indexable', $headers, true);
+    $robotsBlockedIdx = array_search('robots_txt_blocked', $headers, true);
+    $robotsMetaIdx = array_search('robots_meta', $headers, true);
+    $xRobotsIdx = array_search('x_robots_tag', $headers, true);
+    $canonicalCrossDomainIdx = array_search('canonical_cross_domain', $headers, true);
+    $hreflangCountIdx = array_search('hreflang_count', $headers, true);
+    $hreflangHasXDefaultIdx = array_search('hreflang_has_x_default', $headers, true);
+    $finalUrlIdx = array_search('final_url', $headers, true);
+    $urlIdx = array_search('url', $headers, true);
 
     $issueCounts = [];
     $conflictReasonCounts = [];
+    $sectionStats = [];
+    $totals = $insights['domain_overview']['totals'];
+
+    $toBool = static function ($value): bool {
+        $raw = strtolower(trim((string) $value));
+        return in_array($raw, ['1', 'true', 'yes'], true);
+    };
+    $toInt = static function ($value): int {
+        return (int) (is_numeric($value) ? $value : 0);
+    };
+    $sectionKeyFromUrl = static function (string $url): string {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $parts = array_values(array_filter(explode('/', strtolower($path)), static fn($p) => $p !== ''));
+        if (count($parts) === 0) {
+            return '/';
+        }
+        $localeSet = ['en', 'fr', 'de', 'es', 'it', 'pt', 'nl'];
+        if (in_array($parts[0], $localeSet, true) && isset($parts[1])) {
+            return $parts[0] . '/' . $parts[1];
+        }
+        return $parts[0];
+    };
 
     while (($row = read_csv_line($handle)) !== false) {
+        $issues = '';
+        $totals['urls']++;
+
+        $status = $toInt($statusIdx !== false ? ($row[$statusIdx] ?? 0) : 0);
+        if ($status !== 200) {
+            $totals['non_200']++;
+        }
+        if ($status >= 300 && $status < 400) {
+            $totals['redirects']++;
+        }
+
+        $isIndexable = $toBool($indexableIdx !== false ? ($row[$indexableIdx] ?? '') : '');
+        if ($isIndexable) {
+            $totals['indexable']++;
+        }
+
+        $robotsBlocked = $toBool($robotsBlockedIdx !== false ? ($row[$robotsBlockedIdx] ?? '') : '');
+        if ($robotsBlocked) {
+            $totals['robots_blocked']++;
+        }
+
+        $robotsMeta = strtolower(trim((string) ($robotsMetaIdx !== false ? ($row[$robotsMetaIdx] ?? '') : '')));
+        $xRobots = strtolower(trim((string) ($xRobotsIdx !== false ? ($row[$xRobotsIdx] ?? '') : '')));
+        if (str_contains($robotsMeta, 'noindex') || str_contains($xRobots, 'noindex')) {
+            $totals['noindex']++;
+        }
+
+        $canonicalCrossDomain = $toBool($canonicalCrossDomainIdx !== false ? ($row[$canonicalCrossDomainIdx] ?? '') : '');
+        if ($canonicalCrossDomain) {
+            $totals['canonical_cross_domain']++;
+        }
+
+        $hreflangCount = $toInt($hreflangCountIdx !== false ? ($row[$hreflangCountIdx] ?? 0) : 0);
+        $hreflangHasXDefault = $toBool($hreflangHasXDefaultIdx !== false ? ($row[$hreflangHasXDefaultIdx] ?? '') : '');
+        if ($hreflangCount >= 2 && !$hreflangHasXDefault) {
+            $totals['hreflang_missing_x_default']++;
+        }
+
         if ($priorityIdx !== false) {
             $priority = strtolower(trim((string) ($row[$priorityIdx] ?? 'none')));
             if (!isset($insights['priority_counts'][$priority])) {
@@ -491,6 +730,7 @@ function build_csv_insights(string $path): array
         }
         if ($hasConflict) {
             $insights['conflicts_count']++;
+            $totals['conflicts']++;
             if ($conflictReasonsIdx !== false) {
                 $reasons = trim((string) ($row[$conflictReasonsIdx] ?? ''));
                 if ($reasons !== '') {
@@ -504,6 +744,33 @@ function build_csv_insights(string $path): array
                 }
             }
         }
+
+        $effectiveUrl = trim((string) (
+            ($finalUrlIdx !== false ? ($row[$finalUrlIdx] ?? '') : '')
+            ?: ($urlIdx !== false ? ($row[$urlIdx] ?? '') : '')
+        ));
+        $sectionKey = $sectionKeyFromUrl($effectiveUrl);
+        if (!isset($sectionStats[$sectionKey])) {
+            $sectionStats[$sectionKey] = [
+                'section' => $sectionKey,
+                'urls' => 0,
+                'with_issues' => 0,
+                'priority_score_sum' => 0,
+                'issue_counts' => [],
+            ];
+        }
+        $sectionStats[$sectionKey]['urls']++;
+        if (isset($issues) && $issues !== '') {
+            $sectionStats[$sectionKey]['with_issues']++;
+            foreach (explode(' | ', $issues) as $issue) {
+                $token = trim($issue);
+                if ($token === '') {
+                    continue;
+                }
+                $sectionStats[$sectionKey]['issue_counts'][$token] = ($sectionStats[$sectionKey]['issue_counts'][$token] ?? 0) + 1;
+            }
+        }
+        $sectionStats[$sectionKey]['priority_score_sum'] += $toInt($priorityScoreIdx !== false ? ($row[$priorityScoreIdx] ?? 0) : 0);
     }
     fclose($handle);
 
@@ -519,6 +786,79 @@ function build_csv_insights(string $path): array
     foreach ($topConflictReasons as $reason => $count) {
         $insights['top_conflict_reasons'][] = ['reason' => $reason, 'count' => $count];
     }
+
+    $totalUrls = max(1, (int) $totals['urls']);
+    $insights['domain_overview']['totals'] = $totals;
+    $insights['domain_overview']['rates'] = [
+        'indexable_pct' => round(((int) $totals['indexable'] / $totalUrls) * 100, 1),
+        'non_200_pct' => round(((int) $totals['non_200'] / $totalUrls) * 100, 1),
+        'conflicts_pct' => round(((int) $totals['conflicts'] / $totalUrls) * 100, 1),
+    ];
+
+    $sections = [];
+    foreach ($sectionStats as $section) {
+        $urls = max(1, (int) ($section['urls'] ?? 0));
+        $withIssues = (int) ($section['with_issues'] ?? 0);
+        $issueRate = round(($withIssues / $urls) * 100, 1);
+        $avgPriorityScore = round(((int) ($section['priority_score_sum'] ?? 0)) / $urls, 1);
+        $sectionIssueCounts = $section['issue_counts'] ?? [];
+        arsort($sectionIssueCounts);
+        $topIssue = '';
+        if (count($sectionIssueCounts) > 0) {
+            $topIssue = (string) array_key_first($sectionIssueCounts);
+        }
+        $sections[] = [
+            'section' => (string) ($section['section'] ?? '/'),
+            'urls' => (int) ($section['urls'] ?? 0),
+            'with_issues' => $withIssues,
+            'issue_rate' => $issueRate,
+            'avg_priority_score' => $avgPriorityScore,
+            'top_issue' => $topIssue,
+        ];
+    }
+
+    usort(
+        $sections,
+        static function (array $a, array $b): int {
+            $aRate = (float) ($a['issue_rate'] ?? 0);
+            $bRate = (float) ($b['issue_rate'] ?? 0);
+            if ($aRate !== $bRate) {
+                return $aRate < $bRate ? 1 : -1;
+            }
+            $aIssues = (int) ($a['with_issues'] ?? 0);
+            $bIssues = (int) ($b['with_issues'] ?? 0);
+            if ($aIssues !== $bIssues) {
+                return $aIssues < $bIssues ? 1 : -1;
+            }
+            $aUrls = (int) ($a['urls'] ?? 0);
+            $bUrls = (int) ($b['urls'] ?? 0);
+            return $aUrls < $bUrls ? 1 : -1;
+        }
+    );
+    $insights['domain_overview']['top_sections'] = array_slice($sections, 0, 8);
+
+    $actions = [];
+    $actionCandidates = [
+        ['action_key' => 'fix_sitemap_indexation_conflicts', 'count' => (int) $totals['conflicts']],
+        ['action_key' => 'fix_non_200_in_sitemap', 'count' => (int) $totals['non_200']],
+        ['action_key' => 'fix_robots_blocked_in_sitemap', 'count' => (int) $totals['robots_blocked']],
+        ['action_key' => 'fix_noindex_in_sitemap', 'count' => (int) $totals['noindex']],
+        ['action_key' => 'fix_cross_domain_canonicals', 'count' => (int) $totals['canonical_cross_domain']],
+        ['action_key' => 'add_x_default_hreflang', 'count' => (int) $totals['hreflang_missing_x_default']],
+    ];
+    foreach ($actionCandidates as $candidate) {
+        if (($candidate['count'] ?? 0) <= 0) {
+            continue;
+        }
+        $actions[] = $candidate;
+    }
+    usort(
+        $actions,
+        static function (array $a, array $b): int {
+            return ((int) ($b['count'] ?? 0)) <=> ((int) ($a['count'] ?? 0));
+        }
+    );
+    $insights['domain_overview']['actions'] = array_slice($actions, 0, 6);
 
     return $insights;
 }

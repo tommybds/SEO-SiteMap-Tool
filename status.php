@@ -27,6 +27,8 @@ if ($job === null) {
     respond_json(['error' => 'Job introuvable'], 404);
 }
 
+$debugDetails = expose_debug_details();
+
 $reportPath = report_path($jobId);
 $conflictsPath = conflicts_report_path($jobId);
 $logPath = log_path($jobId);
@@ -46,8 +48,12 @@ if (in_array($currentStatus, ['queued', 'running'], true)) {
         } else {
             $job['status'] = 'failed';
             $job['completed_at'] = gmdate('c');
-            $tail = tail_file_lines($logPath, 15);
-            $job['error'] = count($tail) > 0 ? implode("\n", $tail) : 'Le process s est arrete sans rapport.';
+            if ($debugDetails) {
+                $tail = tail_file_lines($logPath, 15);
+                $job['error'] = count($tail) > 0 ? implode("\n", $tail) : 'Le process s est arrete sans rapport.';
+            } else {
+                $job['error'] = 'Le process s est arrete sans rapport.';
+            }
         }
         write_job($jobId, $job);
     }
@@ -63,6 +69,26 @@ $insights = [
     'top_issues' => [],
     'conflicts_count' => 0,
     'top_conflict_reasons' => [],
+    'domain_overview' => [
+        'totals' => [
+            'urls' => 0,
+            'indexable' => 0,
+            'non_200' => 0,
+            'redirects' => 0,
+            'robots_blocked' => 0,
+            'noindex' => 0,
+            'conflicts' => 0,
+            'canonical_cross_domain' => 0,
+            'hreflang_missing_x_default' => 0,
+        ],
+        'rates' => [
+            'indexable_pct' => 0,
+            'non_200_pct' => 0,
+            'conflicts_pct' => 0,
+        ],
+        'top_sections' => [],
+        'actions' => [],
+    ],
 ];
 
 if ((string) ($job['status'] ?? '') === 'completed' && $reportExists) {
@@ -70,7 +96,12 @@ if ((string) ($job['status'] ?? '') === 'completed' && $reportExists) {
         $job['summary_cache'] = build_csv_summary($reportPath);
     }
     $summary = $job['summary_cache'];
-    if (!isset($job['insights_cache']) || !is_array($job['insights_cache'])) {
+    if (
+        !isset($job['insights_cache'])
+        || !is_array($job['insights_cache'])
+        || !isset($job['insights_cache']['domain_overview'])
+        || !is_array($job['insights_cache']['domain_overview'])
+    ) {
         $job['insights_cache'] = build_csv_insights($reportPath);
     }
     $insights = $job['insights_cache'];
@@ -98,8 +129,13 @@ if ((string) ($job['status'] ?? '') === 'completed' && $reportExists) {
 }
 
 $recentRuns = [];
-if (!empty($job['sitemap'])) {
+if ($debugDetails && !empty($job['sitemap'])) {
     $recentRuns = list_recent_completed_jobs_for_sitemap((string) $job['sitemap'], 8);
+}
+
+$errorOut = $job['error'] ?? null;
+if (!$debugDetails && is_string($errorOut) && trim($errorOut) !== '') {
+    $errorOut = 'Le job a echoue. Active SEO_TOOL_EXPOSE_DEBUG=1 pour le detail technique.';
 }
 
 respond_json([
@@ -110,7 +146,7 @@ respond_json([
     'completed_at' => $job['completed_at'] ?? null,
     'sitemap' => $job['sitemap'] ?? null,
     'params' => $job['params'] ?? [],
-    'error' => $job['error'] ?? null,
+    'error' => $errorOut,
     'report_exists' => $reportExists,
     'summary' => $summary,
     'insights' => $insights,
@@ -120,5 +156,5 @@ respond_json([
     'conflicts_download_url' => 'download_conflicts.php?job_id=' . rawurlencode($jobId),
     'conflicts_report_exists' => $conflictsReportExists,
     'preview_url' => 'preview.php?job_id=' . rawurlencode($jobId),
-    'log_tail' => tail_file_lines($logPath, 40),
+    'log_tail' => $debugDetails ? tail_file_lines($logPath, 40) : [],
 ]);

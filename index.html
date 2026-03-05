@@ -29,17 +29,20 @@
   <div class="wrap">
     <div class="card">
       <div class="title-row">
-        <h1 id="app-title">SEO Sitemap Audit</h1>
+        <h1 id="app-title">SEO Tool</h1>
         <div class="lang-switch">
           <button type="button" id="lang-fr-btn" class="lang-btn">FR</button>
           <button type="button" id="lang-en-btn" class="lang-btn">EN</button>
         </div>
       </div>
-      <p id="app-subtitle">Entrez un sitemap XML. L’outil lance le script Python en arrière-plan et produit un CSV téléchargeable, avec aperçu et insights dans la page.</p>
+      <p id="app-subtitle">Auditez sitemap, maillage interne, SEO technique, redirections et GEO depuis une interface unique.</p>
 
       <div class="mode-switch" role="tablist" aria-label="Choix de fonctionnalité">
         <button type="button" id="mode-sitemap-btn" class="mode-btn active" role="tab" aria-selected="true">Audit sitemap</button>
         <button type="button" id="mode-mesh-btn" class="mode-btn" role="tab" aria-selected="false">Maillage interne</button>
+        <button type="button" id="mode-tech-btn" class="mode-btn" role="tab" aria-selected="false">Audit SEO technique</button>
+        <button type="button" id="mode-redirect-btn" class="mode-btn" role="tab" aria-selected="false">Test redirections</button>
+        <button type="button" id="mode-geo-btn" class="mode-btn" role="tab" aria-selected="false">Audit GEO</button>
       </div>
       <div id="mode-help" class="muted mode-help">Les deux sont liés: le maillage peut reprendre automatiquement le domaine du sitemap saisi.</div>
 
@@ -89,6 +92,57 @@
         </form>
         <div id="mesh-form-error" class="danger" aria-live="polite"></div>
       </div>
+
+      <div id="tech-mode-panel" style="display:none;">
+        <form id="tech-form" class="tech-form">
+          <div>
+            <label id="label-tech-url" for="tech_url">URL à auditer</label>
+            <input id="tech_url" name="tech_url" type="url" placeholder="https://example.com/page" required>
+          </div>
+          <div>
+            <label id="label-tech-timeout" for="tech_timeout">Timeout (s)</label>
+            <input id="tech_timeout" name="tech_timeout" type="number" min="3" max="30" value="12">
+          </div>
+          <div class="actions" style="grid-column: 1/-1;">
+            <button id="tech-run-btn" type="submit">Analyser l’URL</button>
+          </div>
+        </form>
+        <div id="tech-form-error" class="danger" aria-live="polite"></div>
+      </div>
+
+      <div id="redirect-mode-panel" style="display:none;">
+        <form id="redirect-form" class="tech-form">
+          <div>
+            <label id="label-redirect-url" for="redirect_url">URL à tester</label>
+            <input id="redirect_url" name="redirect_url" type="url" placeholder="https://example.com/page" required>
+          </div>
+          <div>
+            <label id="label-redirect-timeout" for="redirect_timeout">Timeout (s)</label>
+            <input id="redirect_timeout" name="redirect_timeout" type="number" min="3" max="30" value="12">
+          </div>
+          <div class="actions" style="grid-column: 1/-1;">
+            <button id="redirect-run-btn" type="submit">Tester les redirections</button>
+          </div>
+        </form>
+        <div id="redirect-form-error" class="danger" aria-live="polite"></div>
+      </div>
+
+      <div id="geo-mode-panel" style="display:none;">
+        <form id="geo-form" class="geo-form">
+          <div>
+            <label id="label-geo-url" for="geo_url">URL à auditer (GEO)</label>
+            <input id="geo_url" name="geo_url" type="url" placeholder="https://example.com/page" required>
+          </div>
+          <div>
+            <label id="label-geo-timeout" for="geo_timeout">Timeout (s)</label>
+            <input id="geo_timeout" name="geo_timeout" type="number" min="3" max="30" value="12">
+          </div>
+          <div class="actions" style="grid-column: 1/-1;">
+            <button id="geo-run-btn" type="submit">Analyser GEO</button>
+          </div>
+        </form>
+        <div id="geo-form-error" class="danger" aria-live="polite"></div>
+      </div>
     </div>
 
     <div class="card" id="result-card" style="display:none;">
@@ -113,6 +167,7 @@
         <strong id="insights-title" class="insights-title">Insights clés</strong>
         <ul id="insights-list" class="insights-list"></ul>
         <div id="top-issues-box" class="insight-groups"></div>
+        <div id="domain-overview-box" class="domain-overview-box"></div>
       </div>
 
       <div id="run-error" class="danger" aria-live="polite"></div>
@@ -176,6 +231,7 @@
       <div class="mesh-toolbar">
         <div id="mesh-interaction-hint" class="muted mesh-interaction-hint">Cliquez sur un nœud pour isoler ses liens.</div>
         <div class="mesh-toolbar-actions">
+          <button type="button" id="mesh-toggle-graph-btn" class="mesh-control-btn">Afficher le graphe</button>
           <button type="button" id="share-mesh-btn" class="mesh-control-btn" style="display:none;">Copier l’URL du maillage</button>
           <button type="button" id="mesh-reset-focus-btn" class="mesh-control-btn" disabled>Réinitialiser le focus</button>
           <button type="button" id="mesh-reset-view-btn" class="mesh-control-btn">Réinitialiser la vue</button>
@@ -190,8 +246,39 @@
       <div id="mesh-kpis" class="mesh-kpis"></div>
       <div id="mesh-warnings" class="mesh-warnings"></div>
       <div id="mesh-actions" class="mesh-actions"></div>
+      <div id="mesh-opportunities" class="mesh-opportunities"></div>
       <div id="mesh-summary" class="mesh-summary"></div>
       <div id="mesh-errors" class="danger"></div>
+    </div>
+
+    <div class="card" id="tech-card" style="display:none;">
+      <div class="row">
+        <strong id="tech-section-title">Audit SEO technique</strong>
+      </div>
+      <div id="tech-status-box" class="status"></div>
+      <div id="tech-kpis" class="tech-kpis"></div>
+      <div id="tech-checks" class="tech-checks"></div>
+      <div id="tech-recos" class="tech-recos"></div>
+    </div>
+
+    <div class="card" id="redirect-card" style="display:none;">
+      <div class="row">
+        <strong id="redirect-section-title">Test redirections</strong>
+      </div>
+      <div id="redirect-status-box" class="status"></div>
+      <div id="redirect-kpis" class="tech-kpis"></div>
+      <div id="redirect-checks" class="tech-checks"></div>
+      <div id="redirect-recos" class="tech-recos"></div>
+    </div>
+
+    <div class="card" id="geo-card" style="display:none;">
+      <div class="row">
+        <strong id="geo-section-title">Audit GEO</strong>
+      </div>
+      <div id="geo-status-box" class="status"></div>
+      <div id="geo-kpis" class="tech-kpis"></div>
+      <div id="geo-checks" class="tech-checks"></div>
+      <div id="geo-recos" class="tech-recos"></div>
     </div>
 
     <footer class="app-footer">
