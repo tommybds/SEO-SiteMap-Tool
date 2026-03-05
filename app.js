@@ -440,8 +440,27 @@
       }
     }
 
+    function ensureUrlWithScheme(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(raw)) return raw;
+      if (raw.startsWith('//')) return `https:${raw}`;
+      if (raw.startsWith('/')) return raw;
+      return `https://${raw}`;
+    }
+
+    function normalizeUrlInputValue(inputEl) {
+      if (!inputEl || typeof inputEl.value !== 'string') return '';
+      const normalized = ensureUrlWithScheme(inputEl.value);
+      if (normalized && normalized !== inputEl.value) {
+        inputEl.value = normalized;
+      }
+      return String(inputEl.value || '').trim();
+    }
+
     function syncMeshUrlFromSitemap(inputSitemap) {
-      const root = inferSiteRootFromUrl(inputSitemap);
+      const normalizedSitemap = ensureUrlWithScheme(inputSitemap);
+      const root = inferSiteRootFromUrl(normalizedSitemap);
       if (!root) return;
       if (techUrlInput && !techUrlInput.value.trim()) {
         techUrlInput.value = root;
@@ -3443,8 +3462,10 @@
         pollTimer = null;
       }
 
+      const sitemapInput = document.getElementById('sitemap');
+      const normalizedSitemap = normalizeUrlInputValue(sitemapInput);
       const payload = {
-        sitemap: document.getElementById('sitemap').value.trim(),
+        sitemap: normalizedSitemap,
         max_urls: Number(document.getElementById('max_urls').value || 500),
         workers: Number(document.getElementById('workers').value || 8),
         timeout: Number(document.getElementById('timeout').value || 15),
@@ -3504,8 +3525,9 @@
         minConfidence: 0,
       };
 
+      const normalizedMeshStart = normalizeUrlInputValue(meshStartUrl);
       const payload = {
-        start_url: normalizeMeshStartUrl(meshStartUrl.value.trim()),
+        start_url: normalizeMeshStartUrl(normalizedMeshStart),
         max_pages: Number(meshMaxPages.value || 80),
         timeout: Number(meshTimeout.value || 12),
         max_runtime_ms: Math.min(120000, Math.max(60000, Math.round(
@@ -3551,7 +3573,7 @@
       setTechRunningState(true);
 
       const payload = {
-        url: techUrlInput.value.trim(),
+        url: normalizeUrlInputValue(techUrlInput),
         timeout: Number(techTimeoutInput.value || 12),
       };
 
@@ -3589,7 +3611,7 @@
       setRedirectRunningState(true);
 
       const payload = {
-        url: redirectUrlInput.value.trim(),
+        url: normalizeUrlInputValue(redirectUrlInput),
         timeout: Number(redirectTimeoutInput.value || 12),
       };
 
@@ -3627,7 +3649,7 @@
       setGeoRunningState(true);
 
       const payload = {
-        url: geoUrlInput.value.trim(),
+        url: normalizeUrlInputValue(geoUrlInput),
         timeout: Number(geoTimeoutInput.value || 12),
       };
 
@@ -3704,18 +3726,30 @@
     if (modeTechBtn) modeTechBtn.addEventListener('click', () => setMode('tech'));
     if (modeRedirectBtn) modeRedirectBtn.addEventListener('click', () => setMode('redirect'));
     if (modeGeoBtn) modeGeoBtn.addEventListener('click', () => setMode('geo'));
-    document.getElementById('sitemap').addEventListener('change', (event) => {
-      syncMeshUrlFromSitemap(event.target.value || '');
-    });
-    document.getElementById('sitemap').addEventListener('blur', (event) => {
-      syncMeshUrlFromSitemap(event.target.value || '');
-    });
+    const sitemapInput = document.getElementById('sitemap');
+    [sitemapInput, meshStartUrl, techUrlInput, redirectUrlInput, geoUrlInput]
+      .filter((inputEl) => !!inputEl)
+      .forEach((inputEl) => {
+        const applyAutoScheme = () => {
+          const normalized = normalizeUrlInputValue(inputEl);
+          if (inputEl === sitemapInput) {
+            syncMeshUrlFromSitemap(normalized);
+          }
+        };
+        inputEl.addEventListener('blur', applyAutoScheme);
+        inputEl.addEventListener('change', applyAutoScheme);
+        inputEl.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            applyAutoScheme();
+          }
+        });
+      });
     langFrBtn.addEventListener('click', () => setLang('fr'));
     langEnBtn.addEventListener('click', () => setLang('en'));
     setMode(detectInitialMode(), false);
     setLang(detectInitialLang(), false);
     applyMeshGraphVisibility();
-    syncMeshUrlFromSitemap(document.getElementById('sitemap').value || '');
+    syncMeshUrlFromSitemap(normalizeUrlInputValue(sitemapInput));
 
     (function loadSharedMeshOnPageLoad() {
       const meshId = new URLSearchParams(window.location.search).get('mesh_id');
