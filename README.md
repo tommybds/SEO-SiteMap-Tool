@@ -1,6 +1,6 @@
-# SEO Sitemap Tool (PHP + JS + Python)
+# SEO Tool (PHP + JS + Python)
 
-Deploy-ready web tool for Plesk to audit XML sitemaps, crawl pages, generate CSV reports, and display actionable SEO insights in the UI.
+Deploy-ready web tool for Plesk with 5 audit modes: sitemap, internal linking, technical SEO (single URL), redirects, and GEO.
 
 ### Demo
 
@@ -8,6 +8,7 @@ Deploy-ready web tool for Plesk to audit XML sitemaps, crawl pages, generate CSV
 
 ### Features
 
+- Multi-tab UI: `Audit sitemap`, `Maillage interne`, `Audit SEO technique`, `Test redirections`, `Audit GEO`
 - Recursive sitemap crawling (`sitemapindex` + `urlset`)
 - On-page SEO checks (title, meta description, H1, indexability, robots meta)
 - Technical SEO checks (`hreflang`, cross-domain/invalid canonical, Open Graph, Twitter Cards, JSON-LD)
@@ -17,6 +18,10 @@ Deploy-ready web tool for Plesk to audit XML sitemaps, crawl pages, generate CSV
 - Scan history + diff against previous scan
 - In-page CSV preview (sorting + filtering)
 - Internal linking mini-audit with graph visualization
+- Internal linking live status/progress endpoint (for in-page scan progress)
+- Redirect audit with visual chain flow (full URL per hop, HTTP codes, permanent/temporary detection)
+- GEO audit focused on AI-answer readiness signals (entity, structure, freshness, Q/A patterns)
+- Smart URL normalization in all URL fields (`example.com` -> `https://example.com`)
 - Shareable report URL (`?job_id=...`) + copy button
 - Bilingual UI FR/EN (`?lang=fr` or `?lang=en`)
 
@@ -41,10 +46,17 @@ Deploy-ready web tool for Plesk to audit XML sitemaps, crawl pages, generate CSV
 ### Folder structure
 
 - `index.html`: web UI (vanilla JS)
+- `app.js`: UI logic (tabs, rendering, API calls)
+- `i18n.js`: FR/EN translations
+- `styles.css`: app styles
 - `audit.php`: starts audit jobs
 - `status.php`: job status/logs/summary/insights
 - `preview.php`: JSON CSV preview endpoint
 - `mesh.php`: internal linking mesh endpoint (JSON graph)
+- `mesh_status.php`: internal linking scan status/progress endpoint
+- `mesh_result.php`: internal linking final result endpoint
+- `tech_audit.php`: technical + redirect audit endpoint
+- `geo_audit.php`: GEO audit endpoint
 - `download.php`: main CSV download
 - `download_conflicts.php`: conflicts CSV download
 - `lib.php`: shared helpers (security, jobs, rate-limit, parsing)
@@ -56,13 +68,15 @@ Deploy-ready web tool for Plesk to audit XML sitemaps, crawl pages, generate CSV
 
 1. PHP enabled with `shell_exec` available
 2. Python 3 available in CLI (`python3`)
-3. Write permissions on `storage/`
+3. PHP cURL extension enabled
+4. PHP DOM/XML extension enabled
+5. Write permissions on `storage/`
 
 ### Security
 
 - Strict sitemap URL validation
 - SSRF protection (DNS resolution + private/reserved IP blocking + redirect checks)
-- IP-based rate limiting (`audit`, `status`, `preview`, `download`)
+- IP-based rate limiting (`audit`, `status`, `preview`, `download`, `mesh`, `tech`, `geo`)
 - Concurrent jobs limits (global + per IP)
 - Sanitized `job_id` (anti-path-traversal)
 - Direct HTTP access to `storage/` blocked via `.htaccess`
