@@ -23,7 +23,7 @@
       window.gtag('config', measurementId);
     })();
   </script>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260306-2">
 </head>
 <body>
   <div class="wrap">
@@ -35,14 +35,16 @@
           <button type="button" id="lang-en-btn" class="lang-btn">EN</button>
         </div>
       </div>
-      <p id="app-subtitle">Auditez sitemap, maillage interne, SEO technique, redirections et GEO depuis une interface unique.</p>
+      <p id="app-subtitle">Auditez sitemap, maillage interne, SEO technique, redirections, accessibilité et GEO depuis une interface unique.</p>
 
       <div class="mode-switch" role="tablist" aria-label="Choix de fonctionnalité">
         <button type="button" id="mode-sitemap-btn" class="mode-btn active" role="tab" aria-selected="true">Audit sitemap</button>
         <button type="button" id="mode-mesh-btn" class="mode-btn" role="tab" aria-selected="false">Maillage interne</button>
         <button type="button" id="mode-tech-btn" class="mode-btn" role="tab" aria-selected="false">Audit SEO technique</button>
         <button type="button" id="mode-redirect-btn" class="mode-btn" role="tab" aria-selected="false">Test redirections</button>
+        <button type="button" id="mode-accessibility-btn" class="mode-btn" role="tab" aria-selected="false">Audit accessibilité</button>
         <button type="button" id="mode-geo-btn" class="mode-btn" role="tab" aria-selected="false">Audit GEO</button>
+        <button type="button" id="mode-action-plan-btn" class="mode-btn" role="tab" aria-selected="false">Plan d’action</button>
       </div>
       <div id="mode-help" class="muted mode-help">Les deux sont liés: le maillage peut reprendre automatiquement le domaine du sitemap saisi.</div>
 
@@ -142,6 +144,34 @@
           </div>
         </form>
         <div id="geo-form-error" class="danger" aria-live="polite"></div>
+      </div>
+
+      <div id="accessibility-mode-panel" style="display:none;">
+        <form id="accessibility-form" class="geo-form">
+          <div>
+            <label id="label-accessibility-url" for="accessibility_url">URL à auditer (accessibilité)</label>
+            <input id="accessibility_url" name="accessibility_url" type="url" placeholder="https://example.com/page" required>
+          </div>
+          <div>
+            <label id="label-accessibility-standard" for="accessibility_standard">Référentiel cible</label>
+            <select id="accessibility_standard" name="accessibility_standard">
+              <option value="rgaa4">RGAA 4.1.2 (en vigueur)</option>
+              <option value="rgaa5">RGAA 5 (préversion)</option>
+            </select>
+          </div>
+          <div>
+            <label id="label-accessibility-timeout" for="accessibility_timeout">Timeout (s)</label>
+            <input id="accessibility_timeout" name="accessibility_timeout" type="number" min="3" max="30" value="12">
+          </div>
+          <div class="actions" style="grid-column: 1/-1;">
+            <button id="accessibility-run-btn" type="submit">Analyser l’accessibilité</button>
+          </div>
+        </form>
+        <div id="accessibility-form-error" class="danger" aria-live="polite"></div>
+      </div>
+
+      <div id="action-plan-mode-panel" style="display:none;">
+        <div id="action-plan-intro" class="status action-plan-intro">Le plan d’action agrège les audits déjà lancés pour prioriser quoi corriger en premier.</div>
       </div>
     </div>
 
@@ -285,13 +315,43 @@
       <div id="geo-recos" class="tech-recos"></div>
     </div>
 
+    <div class="card" id="accessibility-card" style="display:none;">
+      <div class="row">
+        <strong id="accessibility-section-title">Audit accessibilité</strong>
+      </div>
+      <div id="accessibility-status-box" class="status"></div>
+      <div id="accessibility-kpis" class="tech-kpis"></div>
+      <div id="accessibility-checks" class="tech-checks"></div>
+      <div id="accessibility-recos" class="tech-recos"></div>
+    </div>
+
+    <div class="card" id="action-plan-card" style="display:none;">
+      <div class="row">
+        <strong id="action-plan-section-title">Plan d’action priorisé</strong>
+      </div>
+      <div id="action-plan-status" class="status"></div>
+      <div id="action-plan-kpis" class="tech-kpis"></div>
+      <div class="action-plan-grid">
+        <div id="action-plan-now" class="action-plan-box"></div>
+        <div id="action-plan-owners" class="action-plan-box"></div>
+        <div id="action-plan-sources" class="action-plan-box"></div>
+      </div>
+      <div id="action-plan-backlog" class="action-plan-box action-plan-backlog"></div>
+    </div>
+
     <footer class="app-footer">
       <span id="footer-credit-prefix">Créé par</span>
       <a href="https://tommy-bordas.fr" target="_blank" rel="noopener noreferrer">tommy-bordas.fr</a>
     </footer>
   </div>
 
-  <script src="i18n.js"></script>
-  <script src="app.js"></script>
+  <script src="i18n.js?v=20260306-2"></script>
+  <script src="js/core/globals.js?v=20260306-2"></script>
+  <script src="js/core/runtime.js?v=20260306-2"></script>
+  <script src="js/features/sitemap.js?v=20260306-2"></script>
+  <script src="js/features/mesh.js?v=20260306-2"></script>
+  <script src="js/features/audits.js?v=20260306-2"></script>
+  <script src="js/features/action-plan.js?v=20260306-2"></script>
+  <script src="js/init.js?v=20260306-2"></script>
 </body>
 </html>

@@ -1,0 +1,91 @@
+/* Auto-split from styles.css */
+    .action-plan-intro {
+      margin-bottom: 0;
+    }
+    .action-plan-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .action-plan-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px;
+      min-width: 0;
+    }
+    .action-plan-box-title {
+      display: block;
+      margin-bottom: 10px;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .action-plan-stack {
+      display: grid;
+      gap: 8px;
+    }
+    .action-plan-item {
+      border: 1px solid #dbeafe;
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 10px;
+    }
+    .action-plan-item-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .action-plan-item-title {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: #0f172a;
+    }
+    .action-plan-item-meta {
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .action-plan-item-detail {
+      color: #334155;
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 6px;
+      word-break: break-word;
+    }
+    .action-plan-count-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .action-plan-count-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 9px 10px;
+      font-size: 12px;
+      color: #1e293b;
+    }
+    .action-plan-count-item strong {
+      font-size: 18px;
+      line-height: 1;
+      color: #0f172a;
+    }
+    .action-plan-empty {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .action-plan-backlog {
+      margin-top: 0;
+    }

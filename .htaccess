@@ -1,5 +1,14 @@
 Options -Indexes
 
-<FilesMatch "^(lib\.php|README\.md)$">
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^storage/ - [F,L,NC]
+</IfModule>
+
+<FilesMatch "^(lib\.php|README\.md|local_sitemap_json_urls\.php)$">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(py|json|log|csv)$">
   Require all denied
 </FilesMatch>

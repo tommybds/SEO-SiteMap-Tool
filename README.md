@@ -1,6 +1,6 @@
 # SEO Tool (PHP + JS + Python)
 
-Deploy-ready web tool for Plesk with 5 audit modes: sitemap, internal linking, technical SEO (single URL), redirects, and GEO.
+Deploy-ready web tool for Plesk with 6 UI modes: sitemap, internal linking, technical SEO (single URL), redirects, GEO, and a prioritized action plan.
 
 ### Demo
 
@@ -8,7 +8,7 @@ Deploy-ready web tool for Plesk with 5 audit modes: sitemap, internal linking, t
 
 ### Features
 
-- Multi-tab UI: `Audit sitemap`, `Maillage interne`, `Audit SEO technique`, `Test redirections`, `Audit GEO`
+- Multi-tab UI: `Audit sitemap`, `Maillage interne`, `Audit SEO technique`, `Test redirections`, `Audit GEO`, `Plan d’action`
 - Recursive sitemap crawling (`sitemapindex` + `urlset`)
 - On-page SEO checks (title, meta description, H1, indexability, robots meta)
 - Technical SEO checks (`hreflang`, cross-domain/invalid canonical, Open Graph, Twitter Cards, JSON-LD)
@@ -21,6 +21,7 @@ Deploy-ready web tool for Plesk with 5 audit modes: sitemap, internal linking, t
 - Internal linking live status/progress endpoint (for in-page scan progress)
 - Redirect audit with visual chain flow (full URL per hop, HTTP codes, permanent/temporary detection)
 - GEO audit focused on AI-answer readiness signals (entity, structure, freshness, Q/A patterns)
+- Prioritized action-plan view aggregating findings by source and owner
 - Smart URL normalization in all URL fields (`example.com` -> `https://example.com`)
 - Shareable report URL (`?job_id=...`) + copy button
 - Bilingual UI FR/EN (`?lang=fr` or `?lang=en`)
@@ -45,10 +46,13 @@ Deploy-ready web tool for Plesk with 5 audit modes: sitemap, internal linking, t
 
 ### Folder structure
 
-- `index.html`: web UI (vanilla JS)
-- `app.js`: UI logic (tabs, rendering, API calls)
+- `index.html`: web UI shell (vanilla JS)
+- `js/core/`: shared globals + runtime helpers
+- `js/features/`: feature modules (`sitemap`, `mesh`, `audits`, `action-plan`)
+- `js/init.js`: event binding + startup flow
 - `i18n.js`: FR/EN translations
-- `styles.css`: app styles
+- `styles.css`: stylesheet entrypoint importing split CSS files
+- `css/`: split stylesheets (`base`, `mesh`, `audits`, `action-plan`, `responsive`)
 - `audit.php`: starts audit jobs
 - `status.php`: job status/logs/summary/insights
 - `preview.php`: JSON CSV preview endpoint
