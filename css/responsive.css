@@ -1,146 +1,166 @@
-/* Auto-split from styles.css */
-    @media (max-width: 860px) {
-      .wrap {
-        padding: 14px;
-      }
-      .card {
-        padding: 16px;
-        border-radius: 18px;
-      }
-      form { grid-template-columns: 1fr; }
-      .mesh-form { grid-template-columns: 1fr; }
-      .tech-form { grid-template-columns: 1fr; }
-      .geo-form { grid-template-columns: 1fr; }
-      .filter-grid { grid-template-columns: 1fr; }
-      .filter-actions {
-        justify-content: stretch;
-      }
-      .filter-reset-btn {
-        max-width: none;
-      }
-      .title-row {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .lang-switch {
-        width: 100%;
-        justify-content: center;
-      }
-      .mode-switch {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-      }
-      .mode-switch .mode-btn:last-child:nth-child(odd) {
-        grid-column: 1 / -1;
-      }
-      .mode-btn {
-        min-width: 0;
-        min-height: 58px;
-        padding: 12px 10px;
-        white-space: normal;
-      }
-      .actions {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .actions button {
-        width: 100%;
-      }
-      .row {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .download-actions {
-        width: 100%;
-      }
-      .download-actions > * {
-        flex: 1 1 100%;
-        text-align: center;
-      }
-      .summary {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      .summary .kpi:last-child {
-        grid-column: 1 / -1;
-      }
-      .card.csv-full-width {
-        width: auto;
-        max-width: none;
-        margin-left: 0;
-        margin-right: 0;
-      }
-      @supports not (width: 100dvw) {
-        .card.csv-full-width {
-          width: auto;
-          max-width: none;
-          margin-left: 0;
-          margin-right: 0;
-        }
-      }
-      .card.csv-full-width .table-wrap {
-        max-height: 62vh;
-      }
-      .action-plan-grid {
-        grid-template-columns: 1fr;
-      }
-      .insights-title { font-size: 22px; }
-      .insight-chip-value { font-size: 20px; }
-      .issue-tag span { max-width: 180px; }
-      .domain-grid { grid-template-columns: 1fr; }
-      .mesh-toolbar-actions,
-      .mesh-opps-actions {
-        width: 100%;
-      }
-      .mesh-control-btn,
-      .mesh-opps-select {
-        flex: 1 1 160px;
-      }
-      #mesh-graph {
-        min-width: 560px;
-        height: 340px;
-      }
-      .mesh-hover-tooltip {
-        white-space: normal;
-      }
-      .redirect-flow-head strong { font-size: 20px; }
-      .redirect-flow-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
-      .redirect-flow-url,
-      .redirect-flow-status { font-size: 16px; }
-      .redirect-flow-arrow { font-size: 30px; }
+/* Responsive overrides. */
+
+@media (max-width: 860px) {
+  .wrap {
+    padding: var(--s-4) var(--s-3);
+  }
+  .card {
+    padding: var(--s-4);
+    border-radius: var(--radius-lg);
+  }
+  form,
+  .mesh-form,
+  .tech-form,
+  .geo-form,
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .filter-actions {
+    justify-content: stretch;
+  }
+  .filter-reset-btn {
+    max-width: none;
+  }
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-3);
+  }
+  .lang-switch {
+    width: 100%;
+    justify-content: center;
+  }
+  .nav-category {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-1);
+  }
+  .nav-category-btn {
+    padding: 10px 8px;
+    font-size: var(--text-sm);
+  }
+  .mode-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-1);
+  }
+  .mode-switch .mode-btn:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+  .mode-btn {
+    min-width: 0;
+    min-height: 52px;
+    padding: 10px 12px;
+    white-space: normal;
+  }
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .actions button {
+    width: 100%;
+  }
+  .row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .download-actions {
+    width: 100%;
+  }
+  .download-actions > * {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .summary .kpi:last-child {
+    grid-column: 1 / -1;
+  }
+  .card.csv-full-width {
+    width: auto;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  @supports not (width: 100dvw) {
+    .card.csv-full-width {
+      width: auto;
+      max-width: none;
+      margin-left: 0;
+      margin-right: 0;
     }
-    @media (max-width: 560px) {
-      .wrap {
-        padding: 12px;
-      }
-      .card {
-        padding: 14px;
-      }
-      h1 {
-        font-size: 22px;
-      }
-      .lang-switch {
-        justify-content: stretch;
-      }
-      .lang-switch .lang-btn {
-        flex: 1 1 0;
-        padding: 10px 0;
-      }
-      .summary,
-      .insights-list,
-      .domain-kpis,
-      .mesh-kpis,
-      .tech-kpis {
-        grid-template-columns: 1fr;
-      }
-      .summary .kpi:last-child {
-        grid-column: auto;
-      }
-      .app-footer {
-        padding-bottom: 16px;
-      }
-    }
+  }
+  .card.csv-full-width .table-wrap {
+    max-height: 62vh;
+  }
+  .action-plan-grid {
+    grid-template-columns: 1fr;
+  }
+  .insights-title { font-size: 22px; }
+  .insight-chip-value { font-size: var(--text-xl); }
+  .issue-tag span { max-width: 180px; }
+  .domain-grid { grid-template-columns: 1fr; }
+  .mesh-toolbar-actions,
+  .mesh-opps-actions {
+    width: 100%;
+  }
+  .mesh-control-btn,
+  .mesh-opps-select {
+    flex: 1 1 160px;
+  }
+  #mesh-graph {
+    min-width: 560px;
+    height: 340px;
+  }
+  .mesh-hover-tooltip {
+    white-space: normal;
+  }
+  .redirect-flow-head strong { font-size: var(--text-xl); }
+  .redirect-flow-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-2);
+  }
+  .redirect-flow-url,
+  .redirect-flow-status { font-size: var(--text-lg); }
+  .redirect-flow-arrow { font-size: 30px; }
+  .a11y-metrics { grid-template-columns: 1fr; }
+  .audit-meta-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: var(--s-2) 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .wrap {
+    padding: var(--s-3);
+  }
+  .card {
+    padding: var(--s-3);
+  }
+  h1 {
+    font-size: var(--text-xl);
+  }
+  .lang-switch {
+    justify-content: stretch;
+  }
+  .lang-switch .lang-btn {
+    flex: 1 1 0;
+    padding: 10px 0;
+  }
+  .summary,
+  .insights-list,
+  .domain-kpis,
+  .mesh-kpis,
+  .tech-kpis {
+    grid-template-columns: 1fr;
+  }
+  .summary .kpi:last-child {
+    grid-column: auto;
+  }
+  .app-footer {
+    padding-bottom: var(--s-4);
+  }
+}

@@ -9,6 +9,28 @@
     var modeAccessibilityBtn = document.getElementById('mode-accessibility-btn');
     var modeGeoBtn = document.getElementById('mode-geo-btn');
     var modeActionPlanBtn = document.getElementById('mode-action-plan-btn');
+    var catSiteBtn = document.getElementById('cat-site-btn');
+    var catPageBtn = document.getElementById('cat-page-btn');
+    var catSynthesisBtn = document.getElementById('cat-synthesis-btn');
+    var modesSiteGroup = document.getElementById('modes-site');
+    var modesPageGroup = document.getElementById('modes-page');
+    var modesSynthesisGroup = document.getElementById('modes-synthesis');
+    var MODE_TO_CATEGORY = {
+      sitemap: 'site',
+      mesh: 'site',
+      tech: 'page',
+      security: 'page',
+      accessibility: 'page',
+      images: 'page',
+      geo: 'page',
+      redirect: 'page',
+      'action-plan': 'synthesis',
+    };
+    var CATEGORY_DEFAULT_MODE = {
+      site: 'sitemap',
+      page: 'tech',
+      synthesis: 'action-plan',
+    };
     var modeHelp = document.getElementById('mode-help');
     var sitemapModePanel = document.getElementById('sitemap-mode-panel');
     var meshModePanel = document.getElementById('mesh-mode-panel');
@@ -39,6 +61,21 @@
     var accessibilityUrlInput = document.getElementById('accessibility_url');
     var accessibilityStandardInput = document.getElementById('accessibility_standard');
     var accessibilityTimeoutInput = document.getElementById('accessibility_timeout');
+    var modeSecurityBtn = document.getElementById('mode-security-btn');
+    var securityModePanel = document.getElementById('security-mode-panel');
+    var securityForm = document.getElementById('security-form');
+    var securityRunBtn = document.getElementById('security-run-btn');
+    var securityFormError = document.getElementById('security-form-error');
+    var securityUrlInput = document.getElementById('security_url');
+    var securityTimeoutInput = document.getElementById('security_timeout');
+    var securityCard = document.getElementById('security-card');
+    var securityStatusBox = document.getElementById('security-status-box');
+    var securitySectionTitle = document.getElementById('security-section-title');
+    var securityKpis = document.getElementById('security-kpis');
+    var securityChecks = document.getElementById('security-checks');
+    var securityRecos = document.getElementById('security-recos');
+    var labelSecurityUrl = document.getElementById('label-security-url');
+    var labelSecurityTimeout = document.getElementById('label-security-timeout');
     var geoForm = document.getElementById('geo-form');
     var geoRunBtn = document.getElementById('geo-run-btn');
     var geoFormError = document.getElementById('geo-form-error');
@@ -162,6 +199,23 @@
     var hasRedirectMode = Boolean(modeRedirectBtn && redirectModePanel && redirectForm && redirectRunBtn && redirectCard);
     var hasAccessibilityMode = Boolean(modeAccessibilityBtn && accessibilityModePanel && accessibilityForm && accessibilityRunBtn && accessibilityCard);
     var hasGeoMode = Boolean(modeGeoBtn && geoModePanel && geoForm && geoRunBtn && geoCard);
+    var hasSecurityMode = Boolean(modeSecurityBtn && securityModePanel && securityForm && securityRunBtn && securityCard);
+    var modeImagesBtn = document.getElementById('mode-images-btn');
+    var imagesModePanel = document.getElementById('images-mode-panel');
+    var imagesForm = document.getElementById('images-form');
+    var imagesRunBtn = document.getElementById('images-run-btn');
+    var imagesFormError = document.getElementById('images-form-error');
+    var imagesUrlInput = document.getElementById('images_url');
+    var imagesTimeoutInput = document.getElementById('images_timeout');
+    var imagesCard = document.getElementById('images-card');
+    var imagesStatusBox = document.getElementById('images-status-box');
+    var imagesSectionTitle = document.getElementById('images-section-title');
+    var imagesKpis = document.getElementById('images-kpis');
+    var imagesChecks = document.getElementById('images-checks');
+    var imagesRecos = document.getElementById('images-recos');
+    var labelImagesUrl = document.getElementById('label-images-url');
+    var labelImagesTimeout = document.getElementById('label-images-timeout');
+    var hasImagesMode = Boolean(modeImagesBtn && imagesModePanel && imagesForm && imagesRunBtn && imagesCard);
 
     var pollTimer = null;
     var meshPollTimer = null;
@@ -180,6 +234,8 @@
     var latestRedirectPayload = null;
     var latestAccessibilityPayload = null;
     var latestGeoPayload = null;
+    var latestSecurityPayload = null;
+    var latestImagesPayload = null;
     var latestActionPlanPayload = null;
     var meshGraphController = null;
     var meshClearSelection = null;

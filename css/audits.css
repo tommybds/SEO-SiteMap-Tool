@@ -307,3 +307,165 @@
       padding: 8px 10px;
       min-width: 0;
     }
+    .audit-meta {
+      padding: 0;
+      background: transparent;
+      border: 0;
+      margin-bottom: 12px;
+      white-space: normal;
+    }
+    .audit-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2px 24px;
+      margin: 0;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+    }
+    .audit-meta-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 140px) 1fr;
+      gap: 12px;
+      align-items: baseline;
+      padding: 6px 0;
+      border-bottom: 1px dashed #e2e8f0;
+      min-width: 0;
+    }
+    .audit-meta-row:last-child,
+    .audit-meta-row:nth-last-child(2):nth-child(odd) {
+      border-bottom: 0;
+    }
+    .audit-meta-row dt {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.01em;
+    }
+    .audit-meta-row dd {
+      margin: 0;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      min-width: 0;
+    }
+    .a11y-metrics {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(260px, 1.2fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .a11y-score-card {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      background: #fff;
+    }
+    .a11y-score-headline {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .a11y-score-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .a11y-score-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .a11y-score-value {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+      font-variant-numeric: tabular-nums;
+    }
+    .a11y-score-suffix {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .a11y-score-card.good { border-color: #86efac; background: #f0fdf4; }
+    .a11y-score-card.good .a11y-score-value { color: #166534; }
+    .a11y-score-card.warn { border-color: #fcd34d; background: #fffbeb; }
+    .a11y-score-card.warn .a11y-score-value { color: #92400e; }
+    .a11y-score-card.bad { border-color: #fca5a5; background: #fef2f2; }
+    .a11y-score-card.bad .a11y-score-value { color: #991b1b; }
+    .a11y-score-breakdown {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .a11y-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      background: #fff;
+    }
+    .a11y-pill b {
+      font-size: 13px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .a11y-pill.pass { background: #ecfdf5; border-color: #86efac; color: #166534; }
+    .a11y-pill.warn { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+    .a11y-pill.fail { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+    .a11y-signals-block {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .a11y-signals-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .a11y-signals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+    }
+    .a11y-signal-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 10px 12px;
+      min-width: 0;
+    }
+    .a11y-signal-card b {
+      display: block;
+      font-size: 22px;
+      color: #0f172a;
+      line-height: 1.05;
+      margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .a11y-signal-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }

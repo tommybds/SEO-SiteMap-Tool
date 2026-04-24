@@ -48,6 +48,7 @@ $maxPages = clamp_int($input['max_pages'] ?? 80, 10, 300, 80);
 $timeout = clamp_int($input['timeout'] ?? 12, 3, 30, 12);
 $maxEdges = clamp_int($input['max_edges'] ?? 800, 100, 2000, 800);
 $maxRuntimeMs = clamp_int($input['max_runtime_ms'] ?? 60000, 15000, 120000, 60000);
+$workers = clamp_int($input['workers'] ?? 8, 1, 16, 8);
 
 $scriptPath = internal_mesh_script_path();
 if (!is_file($scriptPath)) {
@@ -82,6 +83,7 @@ $job = [
         'timeout' => $timeout,
         'max_edges' => $maxEdges,
         'max_runtime_ms' => $maxRuntimeMs,
+        'workers' => $workers,
     ],
     'output_path' => $outputPath,
     'progress_path' => $progressPath,
@@ -100,6 +102,7 @@ $command = 'nohup python3 ' . escapeshellarg($scriptPath)
     . ' --timeout ' . escapeshellarg((string) $timeout)
     . ' --max-edges ' . escapeshellarg((string) $maxEdges)
     . ' --max-runtime-ms ' . escapeshellarg((string) $maxRuntimeMs)
+    . ' --workers ' . escapeshellarg((string) $workers)
     . ' --output-json ' . escapeshellarg($outputPath)
     . ' --progress-json ' . escapeshellarg($progressPath)
     . ' > ' . escapeshellarg($logPath)

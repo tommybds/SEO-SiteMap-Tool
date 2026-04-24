@@ -1,0 +1,94 @@
+/* Status boxes, summary KPIs. */
+
+.status {
+  position: relative;
+  padding: var(--s-3) var(--s-4);
+  padding-left: calc(var(--s-4) + 4px);
+  border-radius: var(--radius-md);
+  background: var(--info-soft);
+  border: 1px solid var(--info-border);
+  color: var(--text);
+  margin-bottom: var(--s-3);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: var(--text-base);
+}
+
+.status::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: var(--info);
+  opacity: 0.85;
+}
+
+.status.status-success {
+  background: var(--success-soft);
+  border-color: var(--success-border);
+}
+.status.status-success::before { background: var(--success); }
+
+.status.status-warning {
+  background: var(--warning-soft);
+  border-color: var(--warning-border);
+}
+.status.status-warning::before { background: var(--warning); }
+
+.status.status-danger {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+.status.status-danger::before { background: var(--danger); }
+
+/* Style variants with their own background gradient — keep the bar off. */
+.status.insights-panel,
+.status.diff-panel,
+.status.action-plan-intro {
+  padding-left: var(--s-4);
+}
+.status.insights-panel::before,
+.status.diff-panel::before,
+.status.action-plan-intro::before {
+  content: none;
+}
+
+#status-box {
+  font-size: var(--text-xs);
+  line-height: 1.45;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.kpi {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--s-3);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.kpi b {
+  display: block;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.kpi span {
+  display: block;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}

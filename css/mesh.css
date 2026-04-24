@@ -42,6 +42,59 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+    .mesh-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 0 0 10px;
+      padding: 6px 8px;
+      border: 1px solid var(--border-soft, #eef2f6);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .mesh-filter-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-right: 4px;
+    }
+    .mesh-filter-pill {
+      appearance: none;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      min-height: 0;
+      box-shadow: none;
+      cursor: pointer;
+      transition: background-color 120ms ease, color 120ms ease,
+                  border-color 120ms ease, box-shadow 120ms ease;
+    }
+    .mesh-filter-pill:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .mesh-filter-pill.is-active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #ffffff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+    .mesh-filter-pill.is-active:hover {
+      background: #115e59;
+      border-color: #115e59;
+      color: #ffffff;
+    }
+    .mesh-filter-pill:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.28);
+    }
     #mesh-graph {
       width: 100%;
       min-width: 760px;

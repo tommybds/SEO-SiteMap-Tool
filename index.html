@@ -23,7 +23,9 @@
       window.gtag('config', measurementId);
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260306-2">
+  <link rel="preconnect" href="https://rsms.me/">
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <link rel="stylesheet" href="styles.css?v=20260423-1">
 </head>
 <body>
   <div class="wrap">
@@ -37,14 +39,64 @@
       </div>
       <p id="app-subtitle">Auditez sitemap, maillage interne, SEO technique, redirections, accessibilité et GEO depuis une interface unique.</p>
 
-      <div class="mode-switch" role="tablist" aria-label="Choix de fonctionnalité">
-        <button type="button" id="mode-sitemap-btn" class="mode-btn active" role="tab" aria-selected="true">Audit sitemap</button>
-        <button type="button" id="mode-mesh-btn" class="mode-btn" role="tab" aria-selected="false">Maillage interne</button>
-        <button type="button" id="mode-tech-btn" class="mode-btn" role="tab" aria-selected="false">Audit SEO technique</button>
-        <button type="button" id="mode-redirect-btn" class="mode-btn" role="tab" aria-selected="false">Test redirections</button>
-        <button type="button" id="mode-accessibility-btn" class="mode-btn" role="tab" aria-selected="false">Audit accessibilité</button>
-        <button type="button" id="mode-geo-btn" class="mode-btn" role="tab" aria-selected="false">Audit GEO</button>
-        <button type="button" id="mode-action-plan-btn" class="mode-btn" role="tab" aria-selected="false">Plan d’action</button>
+      <nav class="nav-category" role="tablist" aria-label="Catégorie d’audit">
+        <button type="button" id="cat-site-btn" class="nav-category-btn active" role="tab" aria-selected="true" aria-controls="modes-site">
+          <svg class="nav-category-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5l4-2 6 2 4-2v12l-4 2-6-2-4 2V5z"/></svg>
+          <span class="nav-category-label">Audit site</span>
+        </button>
+        <button type="button" id="cat-page-btn" class="nav-category-btn" role="tab" aria-selected="false" aria-controls="modes-page">
+          <svg class="nav-category-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>
+          <span class="nav-category-label">Audit page</span>
+        </button>
+        <button type="button" id="cat-synthesis-btn" class="nav-category-btn" role="tab" aria-selected="false" aria-controls="modes-synthesis">
+          <svg class="nav-category-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5h9M8 10h9M8 15h9M3 5l1.2 1.2L6 4.5M3 10l1.2 1.2L6 9.5M3 15l1.2 1.2L6 14.5"/></svg>
+          <span class="nav-category-label">Synthèse</span>
+        </button>
+      </nav>
+
+      <div class="mode-switch mode-switch-group" id="modes-site" data-category="site" role="tablist" aria-label="Audits site">
+        <button type="button" id="mode-sitemap-btn" class="mode-btn active" role="tab" aria-selected="true">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5l4-2 6 2 4-2v12l-4 2-6-2-4 2V5z"/><path d="M7 3v14M13 5v14"/></svg>
+          <span class="mode-btn-label">Audit sitemap</span>
+        </button>
+        <button type="button" id="mode-mesh-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><path d="M7 9l6-3M7 11l6 3"/></svg>
+          <span class="mode-btn-label">Maillage interne</span>
+        </button>
+      </div>
+
+      <div class="mode-switch mode-switch-group" id="modes-page" data-category="page" role="tablist" aria-label="Audits page" hidden>
+        <button type="button" id="mode-tech-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.8 2.2a3.8 3.8 0 00-4.6 4.9L2.5 13.7 6.3 17.5l6.6-6.7a3.8 3.8 0 004.9-4.6l-2.3 2.3-2-2 2.3-2.3z"/></svg>
+          <span class="mode-btn-label">Audit SEO technique</span>
+        </button>
+        <button type="button" id="mode-security-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2l6 3v4c0 4-2.7 7.5-6 9-3.3-1.5-6-5-6-9V5l6-3z"/><path d="M7.5 10.2l1.8 1.8 3.2-3.5"/></svg>
+          <span class="mode-btn-label">Audit sécurité</span>
+        </button>
+        <button type="button" id="mode-accessibility-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="4" r="1.6"/><path d="M3.5 7.5l6.5 1.2 6.5-1.2M10 8.7v3.6l-2.2 4.6M10 12.3l2.2 4.6"/></svg>
+          <span class="mode-btn-label">Audit accessibilité</span>
+        </button>
+        <button type="button" id="mode-images-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="1.5"/><circle cx="7" cy="9" r="1.6"/><path d="M3 14l4-4 4 3 3-4 3 4"/></svg>
+          <span class="mode-btn-label">Audit images</span>
+        </button>
+        <button type="button" id="mode-geo-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.2 2.6 2.2 11.4 0 14M10 3c-2.2 2.6-2.2 11.4 0 14"/></svg>
+          <span class="mode-btn-label">Audit GEO</span>
+        </button>
+        <button type="button" id="mode-redirect-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h13l-3-3M17 13H4l3 3"/></svg>
+          <span class="mode-btn-label">Test redirections</span>
+        </button>
+      </div>
+
+      <div class="mode-switch mode-switch-group" id="modes-synthesis" data-category="synthesis" role="tablist" aria-label="Synthèse" hidden>
+        <button type="button" id="mode-action-plan-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5h9M8 10h9M8 15h9M3 5l1.2 1.2L6 4.5M3 10l1.2 1.2L6 9.5M3 15l1.2 1.2L6 14.5"/></svg>
+          <span class="mode-btn-label">Plan d’action</span>
+        </button>
       </div>
       <div id="mode-help" class="muted mode-help">Les deux sont liés: le maillage peut reprendre automatiquement le domaine du sitemap saisi.</div>
 
@@ -129,6 +181,23 @@
         <div id="redirect-form-error" class="danger" aria-live="polite"></div>
       </div>
 
+      <div id="images-mode-panel" style="display:none;">
+        <form id="images-form" class="geo-form">
+          <div>
+            <label id="label-images-url" for="images_url">URL à auditer (images)</label>
+            <input id="images_url" name="images_url" type="url" placeholder="https://example.com/page" required>
+          </div>
+          <div>
+            <label id="label-images-timeout" for="images_timeout">Timeout (s)</label>
+            <input id="images_timeout" name="images_timeout" type="number" min="3" max="30" value="12">
+          </div>
+          <div class="actions" style="grid-column: 1/-1;">
+            <button id="images-run-btn" type="submit">Analyser les images</button>
+          </div>
+        </form>
+        <div id="images-form-error" class="danger" aria-live="polite"></div>
+      </div>
+
       <div id="geo-mode-panel" style="display:none;">
         <form id="geo-form" class="geo-form">
           <div>
@@ -144,6 +213,23 @@
           </div>
         </form>
         <div id="geo-form-error" class="danger" aria-live="polite"></div>
+      </div>
+
+      <div id="security-mode-panel" style="display:none;">
+        <form id="security-form" class="geo-form">
+          <div>
+            <label id="label-security-url" for="security_url">URL à auditer (sécurité)</label>
+            <input id="security_url" name="security_url" type="url" placeholder="https://example.com/page" required>
+          </div>
+          <div>
+            <label id="label-security-timeout" for="security_timeout">Timeout (s)</label>
+            <input id="security_timeout" name="security_timeout" type="number" min="3" max="30" value="12">
+          </div>
+          <div class="actions" style="grid-column: 1/-1;">
+            <button id="security-run-btn" type="submit">Analyser la sécurité</button>
+          </div>
+        </form>
+        <div id="security-form-error" class="danger" aria-live="polite"></div>
       </div>
 
       <div id="accessibility-mode-panel" style="display:none;">
@@ -268,6 +354,13 @@
         </div>
       </div>
       <div id="share-mesh-feedback" class="muted" style="font-size:12px; min-height:16px; margin-bottom:8px; display:none;"></div>
+      <div class="mesh-filter-bar" id="mesh-filter-bar" role="group" aria-label="Filtrer les types de liens">
+        <span class="mesh-filter-label" id="mesh-filter-label">Types de liens</span>
+        <button type="button" class="mesh-filter-pill is-active" data-context="content" aria-pressed="true">Contenu</button>
+        <button type="button" class="mesh-filter-pill is-active" data-context="menu" aria-pressed="true">Menu</button>
+        <button type="button" class="mesh-filter-pill is-active" data-context="footer" aria-pressed="true">Footer</button>
+        <button type="button" class="mesh-filter-pill is-active" data-context="breadcrumb" aria-pressed="true">Fil d’Ariane</button>
+      </div>
       <div class="mesh-graph-wrap">
         <svg id="mesh-graph" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="mesh-hover-tooltip" class="mesh-hover-tooltip" aria-hidden="true"></div>
@@ -305,6 +398,16 @@
       <div id="redirect-recos" class="tech-recos"></div>
     </div>
 
+    <div class="card" id="images-card" style="display:none;">
+      <div class="row">
+        <strong id="images-section-title">Audit images</strong>
+      </div>
+      <div id="images-status-box" class="status"></div>
+      <div id="images-kpis" class="tech-kpis"></div>
+      <div id="images-checks" class="tech-checks"></div>
+      <div id="images-recos" class="tech-recos"></div>
+    </div>
+
     <div class="card" id="geo-card" style="display:none;">
       <div class="row">
         <strong id="geo-section-title">Audit GEO</strong>
@@ -313,6 +416,16 @@
       <div id="geo-kpis" class="tech-kpis"></div>
       <div id="geo-checks" class="tech-checks"></div>
       <div id="geo-recos" class="tech-recos"></div>
+    </div>
+
+    <div class="card" id="security-card" style="display:none;">
+      <div class="row">
+        <strong id="security-section-title">Audit sécurité</strong>
+      </div>
+      <div id="security-status-box" class="status"></div>
+      <div id="security-kpis" class="tech-kpis"></div>
+      <div id="security-checks" class="tech-checks"></div>
+      <div id="security-recos" class="tech-recos"></div>
     </div>
 
     <div class="card" id="accessibility-card" style="display:none;">
@@ -345,13 +458,19 @@
     </footer>
   </div>
 
-  <script src="i18n.js?v=20260306-2"></script>
-  <script src="js/core/globals.js?v=20260306-2"></script>
-  <script src="js/core/runtime.js?v=20260306-2"></script>
+  <script src="i18n.js?v=20260423-1"></script>
+  <script src="js/core/globals.js?v=20260423-1"></script>
+  <script src="js/core/runtime.js?v=20260423-1"></script>
   <script src="js/features/sitemap.js?v=20260306-2"></script>
-  <script src="js/features/mesh.js?v=20260306-2"></script>
-  <script src="js/features/audits.js?v=20260306-2"></script>
-  <script src="js/features/action-plan.js?v=20260306-2"></script>
-  <script src="js/init.js?v=20260306-2"></script>
+  <script src="js/features/mesh.js?v=20260422-3"></script>
+  <script src="js/features/audits-shared.js?v=20260422-2"></script>
+  <script src="js/features/audits-tech.js?v=20260422-2"></script>
+  <script src="js/features/audits-redirect.js?v=20260422-2"></script>
+  <script src="js/features/audits-geo.js?v=20260422-2"></script>
+  <script src="js/features/audits-accessibility.js?v=20260422-2"></script>
+  <script src="js/features/audits-security.js?v=20260423-1"></script>
+  <script src="js/features/audits-images.js?v=20260423-1"></script>
+  <script src="js/features/action-plan.js?v=20260423-1"></script>
+  <script src="js/init.js?v=20260423-1"></script>
 </body>
 </html>

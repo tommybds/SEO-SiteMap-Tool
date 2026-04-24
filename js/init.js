@@ -236,6 +236,74 @@ form.addEventListener('submit', async (event) => {
       }
     });
 
+    if (hasSecurityMode) securityForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setMode('security');
+      securityFormError.textContent = '';
+      securityCard.style.display = 'block';
+      securityStatusBox.textContent = t('security_loading');
+      securityKpis.innerHTML = '';
+      securityChecks.innerHTML = '';
+      securityRecos.innerHTML = '';
+      setSecurityRunningState(true);
+
+      const payload = {
+        url: normalizeUrlInputValue(securityUrlInput),
+        timeout: Number(securityTimeoutInput.value || 12),
+      };
+
+      try {
+        const data = await runSecurityAudit(payload);
+        if (!data || !data.audit) throw new Error(t('security_api_error'));
+        renderSecurity(data.audit);
+      } catch (err) {
+        latestSecurityPayload = null;
+        securityCard.style.display = 'block';
+        securityStatusBox.textContent = t('security_api_error');
+        securityFormError.textContent = err.message || String(err);
+        securityKpis.innerHTML = '';
+        securityChecks.innerHTML = '';
+        securityRecos.innerHTML = '';
+        renderActionPlan();
+      } finally {
+        setSecurityRunningState(false);
+      }
+    });
+
+    if (hasImagesMode) imagesForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setMode('images');
+      imagesFormError.textContent = '';
+      imagesCard.style.display = 'block';
+      imagesStatusBox.textContent = t('images_loading');
+      imagesKpis.innerHTML = '';
+      imagesChecks.innerHTML = '';
+      imagesRecos.innerHTML = '';
+      setImagesRunningState(true);
+
+      const payload = {
+        url: normalizeUrlInputValue(imagesUrlInput),
+        timeout: Number(imagesTimeoutInput.value || 12),
+      };
+
+      try {
+        const data = await runImagesAudit(payload);
+        if (!data || !data.audit) throw new Error(t('images_api_error'));
+        renderImages(data.audit);
+      } catch (err) {
+        latestImagesPayload = null;
+        imagesCard.style.display = 'block';
+        imagesStatusBox.textContent = t('images_api_error');
+        imagesFormError.textContent = err.message || String(err);
+        imagesKpis.innerHTML = '';
+        imagesChecks.innerHTML = '';
+        imagesRecos.innerHTML = '';
+        renderActionPlan();
+      } finally {
+        setImagesRunningState(false);
+      }
+    });
+
     if (hasAccessibilityMode) accessibilityForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       setMode('accessibility');
@@ -292,6 +360,24 @@ form.addEventListener('submit', async (event) => {
       });
     }
 
+    // Context filter pills — toggle which link types appear in the graph.
+    document.querySelectorAll('.mesh-filter-pill').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        const ctx = String(pill.dataset.context || '').toLowerCase();
+        if (!ctx) return;
+        if (meshActiveContexts.has(ctx)) {
+          meshActiveContexts.delete(ctx);
+          pill.classList.remove('is-active');
+          pill.setAttribute('aria-pressed', 'false');
+        } else {
+          meshActiveContexts.add(ctx);
+          pill.classList.add('is-active');
+          pill.setAttribute('aria-pressed', 'true');
+        }
+        refreshMeshGraphView();
+      });
+    });
+
     shareReportBtn.addEventListener('click', async () => {
       const shareUrl = String(shareReportBtn.dataset.shareUrl || '').trim();
       if (!shareUrl) {
@@ -327,10 +413,21 @@ form.addEventListener('submit', async (event) => {
     if (modeTechBtn) modeTechBtn.addEventListener('click', () => setMode('tech'));
     if (modeRedirectBtn) modeRedirectBtn.addEventListener('click', () => setMode('redirect'));
     if (modeAccessibilityBtn) modeAccessibilityBtn.addEventListener('click', () => setMode('accessibility'));
+    if (modeSecurityBtn) modeSecurityBtn.addEventListener('click', () => setMode('security'));
+    if (modeImagesBtn) modeImagesBtn.addEventListener('click', () => setMode('images'));
     if (modeGeoBtn) modeGeoBtn.addEventListener('click', () => setMode('geo'));
     if (modeActionPlanBtn) modeActionPlanBtn.addEventListener('click', () => setMode('action-plan'));
+    if (catSiteBtn) catSiteBtn.addEventListener('click', () => {
+      if (modeCategory(currentMode) !== 'site') setMode(CATEGORY_DEFAULT_MODE.site);
+    });
+    if (catPageBtn) catPageBtn.addEventListener('click', () => {
+      if (modeCategory(currentMode) !== 'page') setMode(CATEGORY_DEFAULT_MODE.page);
+    });
+    if (catSynthesisBtn) catSynthesisBtn.addEventListener('click', () => {
+      if (modeCategory(currentMode) !== 'synthesis') setMode(CATEGORY_DEFAULT_MODE.synthesis);
+    });
     const sitemapInput = document.getElementById('sitemap');
-    [sitemapInput, meshStartUrl, techUrlInput, redirectUrlInput, accessibilityUrlInput, geoUrlInput]
+    [sitemapInput, meshStartUrl, techUrlInput, redirectUrlInput, accessibilityUrlInput, securityUrlInput, imagesUrlInput, geoUrlInput]
       .filter((inputEl) => !!inputEl)
       .forEach((inputEl) => {
         const applyAutoScheme = () => {

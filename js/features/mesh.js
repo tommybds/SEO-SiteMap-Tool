@@ -1,4 +1,16 @@
 // Auto-split from app.js
+
+// --- Mesh graph view state (preserved across filter toggles & re-renders) ---
+var meshGraphRawNodes = [];
+var meshGraphRawEdges = [];
+var meshActiveContexts = new Set(['content', 'menu', 'footer', 'breadcrumb']);
+
+function refreshMeshGraphView() {
+  if (typeof renderMeshGraph === 'function') {
+    renderMeshGraph(meshGraphRawNodes, meshGraphRawEdges);
+  }
+}
+
 function abbreviatePath(url) {
       try {
         const u = new URL(String(url || ''));
@@ -683,6 +695,18 @@ function abbreviatePath(url) {
     }
 
     function renderMeshGraph(nodes, edges) {
+      // Cache raw inputs so filter toggles can re-render without re-fetching.
+      if (nodes !== meshGraphRawNodes) meshGraphRawNodes = Array.isArray(nodes) ? nodes : [];
+      if (edges !== meshGraphRawEdges) meshGraphRawEdges = Array.isArray(edges) ? edges : [];
+
+      // Apply context filters — default: all contexts active.
+      const filteredEdges = meshGraphRawEdges.filter((edge) => {
+        const ctx = String((edge && edge.context) || 'content').toLowerCase();
+        const normalized = ['content', 'menu', 'footer', 'breadcrumb'].includes(ctx) ? ctx : 'content';
+        return meshActiveContexts.has(normalized);
+      });
+      edges = filteredEdges;
+
       meshGraph.innerHTML = '';
       if (meshGraphController) {
         meshGraphController.abort();
@@ -811,12 +835,37 @@ function abbreviatePath(url) {
       } else {
         meshInteractionHint.textContent = t('mesh_graph_collapsed_hint');
       }
+      // Size range widened (3 → 14) to sharpen hub-vs-leaf hierarchy.
       const nodeRadiusByUrl = new Map();
       sorted.forEach((node) => {
         const s = score(node);
-        const radius = node.is_start ? 10 : Math.max(4, Math.min(10, 4 + s * 0.3));
+        const radius = node.is_start ? 14 : Math.max(3, Math.min(13, 3 + s * 0.42));
         nodeRadiusByUrl.set(node.url, radius);
       });
+      // Precompute top-5 hub URLs (by combined in+out degree) for degree labels.
+      const topHubSet = new Set(
+        sorted
+          .filter((node) => !node.is_start && score(node) > 0)
+          .slice(0, 5)
+          .map((node) => node.url)
+      );
+      // Weight statistics on primary edges for opacity gradient.
+      let primaryMinWeight = Infinity;
+      let primaryMaxWeight = -Infinity;
+      primaryEdges.forEach((edge) => {
+        const w = Number(edge.weight || 1);
+        if (w < primaryMinWeight) primaryMinWeight = w;
+        if (w > primaryMaxWeight) primaryMaxWeight = w;
+      });
+      if (!Number.isFinite(primaryMinWeight)) primaryMinWeight = 1;
+      if (!Number.isFinite(primaryMaxWeight)) primaryMaxWeight = 1;
+      const primaryWeightSpan = Math.max(0.0001, primaryMaxWeight - primaryMinWeight);
+      const weightOpacity = (w) => {
+        const ratio = (Number(w || 1) - primaryMinWeight) / primaryWeightSpan;
+        const clamped = Math.max(0, Math.min(1, ratio));
+        // Ramp 0.14 → 0.5: weak links stay discreet, strong ones pop.
+        return 0.14 + clamped * 0.36;
+      };
       const neighbors = new Map();
       sorted.forEach((node) => neighbors.set(node.url, new Set()));
       allRenderableEdges.forEach((edge) => {
@@ -838,15 +887,15 @@ function abbreviatePath(url) {
       const buildArrowMarker = (id, color) => {
         const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
         marker.setAttribute('id', id);
-        marker.setAttribute('markerWidth', '7');
-        marker.setAttribute('markerHeight', '7');
-        marker.setAttribute('refX', '6');
-        marker.setAttribute('refY', '3.5');
+        marker.setAttribute('markerWidth', '5.5');
+        marker.setAttribute('markerHeight', '5.5');
+        marker.setAttribute('refX', '5');
+        marker.setAttribute('refY', '2.75');
         marker.setAttribute('orient', 'auto');
         marker.setAttribute('markerUnits', 'strokeWidth');
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', 'M0,0 L0,7 L7,3.5 z');
+        path.setAttribute('d', 'M0,0 L0,5.5 L5.5,2.75 z');
         path.setAttribute('fill', color);
         marker.appendChild(path);
         defs.appendChild(marker);
@@ -866,6 +915,14 @@ function abbreviatePath(url) {
       const edgeEls = [];
       const nodeEls = new Map();
 
+      // Curvature offsets the midpoint perpendicularly to the edge. Two
+      // opposite-direction edges get mirrored curvatures so they no longer
+      // overlap exactly — makes bidirectional pairs visible.
+      const reversedKeys = new Set(
+        allRenderableEdges
+          .map((e) => `${String(e.target)}=>${String(e.source)}`)
+      );
+
       allRenderableEdges.forEach((edge) => {
         const from = pos.get(edge.source);
         const to = pos.get(edge.target);
@@ -884,17 +941,37 @@ function abbreviatePath(url) {
         const x2 = to.x - ux * (targetRadius + 4);
         const y2 = to.y - uy * (targetRadius + 4);
 
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', String(x1));
-        line.setAttribute('y1', String(y1));
-        line.setAttribute('x2', String(x2));
-        line.setAttribute('y2', String(y2));
-        line.setAttribute('stroke', isPrimary ? '#94a3b8' : '#cbd5e1');
-        line.setAttribute('stroke-opacity', isPrimary ? '0.35' : '0.04');
-        line.setAttribute('stroke-width', '1');
-        line.setAttribute('marker-end', isPrimary ? 'url(#mesh-arrow-default)' : 'url(#mesh-arrow-muted)');
-        edgeLayer.appendChild(line);
-        edgeEls.push({ el: line, source: edge.source, target: edge.target, primary: isPrimary });
+        // Perpendicular offset: curve amount ~6% of length; mirror the side
+        // for reciprocal edges so both directions are visible.
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const hasReciprocal = reversedKeys.has(edgeKey);
+        // Tie-break by URL order so each direction picks a consistent side.
+        const side = hasReciprocal
+          ? (String(edge.source) < String(edge.target) ? 1 : -1)
+          : 1;
+        const curveMag = Math.min(28, Math.max(6, len * 0.06)) * side;
+        const ctrlX = midX + (-uy) * curveMag;
+        const ctrlY = midY + (ux) * curveMag;
+        const pathD = `M${x1},${y1} Q${ctrlX},${ctrlY} ${x2},${y2}`;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathD);
+        path.setAttribute('fill', 'none');
+        const baseOpacity = isPrimary ? weightOpacity(edge.weight) : 0.04;
+        path.setAttribute('stroke', isPrimary ? '#94a3b8' : '#cbd5e1');
+        path.setAttribute('stroke-opacity', String(baseOpacity));
+        path.setAttribute('stroke-width', '1');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('marker-end', isPrimary ? 'url(#mesh-arrow-default)' : 'url(#mesh-arrow-muted)');
+        edgeLayer.appendChild(path);
+        edgeEls.push({
+          el: path,
+          source: edge.source,
+          target: edge.target,
+          primary: isPrimary,
+          baseOpacity,
+        });
       });
 
       const setEdgeStyle = (item, stroke, opacity, widthValue, markerId) => {
@@ -903,6 +980,10 @@ function abbreviatePath(url) {
         item.el.setAttribute('stroke-width', String(widthValue));
         item.el.setAttribute('marker-end', `url(#${markerId})`);
       };
+
+      const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      labelLayer.setAttribute('pointer-events', 'none');
+      viewport.appendChild(labelLayer);
 
       sorted.forEach((node) => {
         const point = pos.get(node.url);
@@ -930,12 +1011,34 @@ function abbreviatePath(url) {
         circle.appendChild(title);
         nodeLayer.appendChild(circle);
         nodeEls.set(node.url, circle);
+
+        // Degree label on top hubs (in+out) — helps locate strategic pages.
+        if (topHubSet.has(node.url) || node.is_start) {
+          const labelText = node.is_start
+            ? `↓${Number(node.inbound || 0)}`
+            : `↓${Number(node.inbound || 0)}·↑${Number(node.outbound || 0)}`;
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', String(point.x));
+          text.setAttribute('y', String(point.y - radius - 6));
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+          text.setAttribute('font-size', '10');
+          text.setAttribute('font-weight', '700');
+          text.setAttribute('fill', '#0f172a');
+          text.setAttribute('paint-order', 'stroke');
+          text.setAttribute('stroke', '#ffffff');
+          text.setAttribute('stroke-width', '3');
+          text.setAttribute('stroke-linejoin', 'round');
+          text.textContent = labelText;
+          labelLayer.appendChild(text);
+        }
       });
 
       const restoreDefaultStyles = () => {
         edgeEls.forEach((item) => {
           if (item.primary) {
-            setEdgeStyle(item, '#94a3b8', 0.35, 1, 'mesh-arrow-default');
+            // Use the weight-based base opacity computed at render time.
+            setEdgeStyle(item, '#94a3b8', item.baseOpacity || 0.35, 1, 'mesh-arrow-default');
           } else {
             setEdgeStyle(item, '#cbd5e1', 0.04, 1, 'mesh-arrow-muted');
           }
@@ -952,59 +1055,99 @@ function abbreviatePath(url) {
         });
       };
 
-      let selectedUrl = '';
-      const setSelection = (url) => {
-        selectedUrl = String(url || '');
-        if (!selectedUrl || !nodeDataByUrl.has(selectedUrl)) {
+      // Focus state split into two tracks:
+      //   - lockedUrl  : click-lock (persists; red border, bold hint)
+      //   - hoveredUrl : transient hover preview (softer, auto-clears)
+      // When locked, hover is ignored — the lock wins.
+      let lockedUrl = '';
+      let hoveredUrl = '';
+
+      const applyFocusVisuals = (focusUrl, locked) => {
+        const focusedNode = nodeDataByUrl.get(focusUrl);
+        if (!focusedNode) {
           restoreDefaultStyles();
-          meshResetFocusBtn.disabled = true;
-          meshInteractionHint.textContent = meshGraphVisible
-            ? (String(meshInteractionHint.dataset.idleHint || '').trim() || composeIdleHint())
-            : t('mesh_graph_collapsed_hint');
           return;
         }
-
-        const focusedNode = nodeDataByUrl.get(selectedUrl);
-        const neighborhood = new Set([selectedUrl, ...(neighbors.get(selectedUrl) || [])]);
-        meshResetFocusBtn.disabled = false;
-        meshInteractionHint.textContent = meshGraphVisible ? t('mesh_interaction_hint_active', {
-          path: abbreviatePath(selectedUrl),
-          inbound: Number(focusedNode.inbound || 0),
-          outbound: Number(focusedNode.outbound || 0),
-        }) : t('mesh_graph_collapsed_hint');
+        const neighborhood = new Set([focusUrl, ...(neighbors.get(focusUrl) || [])]);
+        const outStrong = locked ? 0.92 : 0.8;
+        const outWidth = locked ? 1.8 : 1.5;
+        const inStrong = locked ? 0.92 : 0.8;
+        const inWidth = locked ? 1.8 : 1.5;
+        const farOpacityPrimary = locked ? 0.08 : 0.1;
+        const farOpacityMuted = locked ? 0.02 : 0.03;
+        const farNodeOpacity = locked ? '0.14' : '0.22';
 
         edgeEls.forEach((item) => {
-          const isOutgoing = item.source === selectedUrl;
-          const isIncoming = item.target === selectedUrl;
+          const isOutgoing = item.source === focusUrl;
+          const isIncoming = item.target === focusUrl;
           const neighborhoodEdge = neighborhood.has(item.source) && neighborhood.has(item.target);
           if (isOutgoing) {
-            setEdgeStyle(item, '#2563eb', 0.92, 1.8, 'mesh-arrow-out');
+            setEdgeStyle(item, '#2563eb', outStrong, outWidth, 'mesh-arrow-out');
           } else if (isIncoming) {
-            setEdgeStyle(item, '#ea580c', 0.92, 1.8, 'mesh-arrow-in');
+            setEdgeStyle(item, '#ea580c', inStrong, inWidth, 'mesh-arrow-in');
           } else if (neighborhoodEdge) {
-            const opacity = item.primary ? 0.28 : 0.2;
+            const opacity = item.primary ? Math.max(0.22, item.baseOpacity * 0.7) : 0.2;
             setEdgeStyle(item, '#94a3b8', opacity, 1.1, 'mesh-arrow-default');
+          } else if (item.primary) {
+            setEdgeStyle(item, '#cbd5e1', farOpacityPrimary, 1, 'mesh-arrow-muted');
           } else {
-            if (item.primary) {
-              setEdgeStyle(item, '#cbd5e1', 0.08, 1, 'mesh-arrow-muted');
-            } else {
-              setEdgeStyle(item, '#cbd5e1', 0.02, 1, 'mesh-arrow-muted');
-            }
+            setEdgeStyle(item, '#cbd5e1', farOpacityMuted, 1, 'mesh-arrow-muted');
           }
         });
 
         nodeEls.forEach((circle, urlKey) => {
           const node = nodeDataByUrl.get(urlKey);
           const radius = Number(circle.dataset.baseRadius || '4');
-          const isSelected = urlKey === selectedUrl;
+          const isFocused = urlKey === focusUrl;
           const isNear = neighborhood.has(urlKey);
 
-          circle.setAttribute('opacity', isNear ? '1' : '0.14');
-          circle.setAttribute('r', String(isSelected ? Math.min(14, radius + 2.5) : radius));
-          circle.setAttribute('stroke', isSelected ? '#f97316' : '#ffffff');
-          circle.setAttribute('stroke-width', isSelected ? '2.2' : '1.2');
+          circle.setAttribute('opacity', isNear ? '1' : farNodeOpacity);
+          circle.setAttribute('r', String(isFocused ? Math.min(18, radius + 3) : radius));
+          circle.setAttribute('stroke', isFocused ? (locked ? '#f97316' : '#0f766e') : '#ffffff');
+          circle.setAttribute('stroke-width', isFocused ? (locked ? '2.4' : '2') : '1.2');
           circle.setAttribute('fill-opacity', node && node.is_start ? '1' : '0.92');
         });
+      };
+
+      const applyHint = (focusUrl, locked) => {
+        if (!focusUrl || !meshGraphVisible) {
+          meshInteractionHint.textContent = meshGraphVisible
+            ? (String(meshInteractionHint.dataset.idleHint || '').trim() || composeIdleHint())
+            : t('mesh_graph_collapsed_hint');
+          return;
+        }
+        const node = nodeDataByUrl.get(focusUrl);
+        meshInteractionHint.textContent = t('mesh_interaction_hint_active', {
+          path: abbreviatePath(focusUrl),
+          inbound: Number((node && node.inbound) || 0),
+          outbound: Number((node && node.outbound) || 0),
+        });
+      };
+
+      const renderFocus = () => {
+        // Click-lock wins over hover. If neither, restore defaults.
+        const activeUrl = lockedUrl || hoveredUrl;
+        if (!activeUrl || !nodeDataByUrl.has(activeUrl)) {
+          restoreDefaultStyles();
+          meshResetFocusBtn.disabled = !lockedUrl;
+          applyHint('', false);
+          return;
+        }
+        applyFocusVisuals(activeUrl, !!lockedUrl);
+        meshResetFocusBtn.disabled = !lockedUrl;
+        applyHint(activeUrl, !!lockedUrl);
+      };
+
+      const setSelection = (url) => {
+        lockedUrl = String(url || '');
+        if (lockedUrl && !nodeDataByUrl.has(lockedUrl)) lockedUrl = '';
+        renderFocus();
+      };
+      const setHover = (url) => {
+        const next = String(url || '');
+        if (next === hoveredUrl) return;
+        hoveredUrl = next;
+        renderFocus();
       };
 
       const controller = new AbortController();
@@ -1012,30 +1155,35 @@ function abbreviatePath(url) {
       const signal = controller.signal;
 
       nodeEls.forEach((circle, url) => {
-        const toggleFocus = () => setSelection(selectedUrl === url ? '' : url);
+        const toggleFocus = () => setSelection(lockedUrl === url ? '' : url);
         circle.addEventListener('click', (event) => {
           event.stopPropagation();
           toggleFocus();
         }, { signal });
         circle.addEventListener('pointerenter', (event) => {
           showHoverTooltip(url, event.clientX, event.clientY);
+          setHover(url);
         }, { signal });
         circle.addEventListener('pointermove', (event) => {
           moveHoverTooltip(event.clientX, event.clientY);
         }, { signal });
         circle.addEventListener('pointerleave', () => {
           hideHoverTooltip();
+          setHover('');
         }, { signal });
         circle.addEventListener('pointercancel', () => {
           hideHoverTooltip();
+          setHover('');
         }, { signal });
         circle.addEventListener('focus', () => {
           if (!graphWrap) return;
           const rect = graphWrap.getBoundingClientRect();
           showHoverTooltip(url, rect.left + 24, rect.top + 24);
+          setHover(url);
         }, { signal });
         circle.addEventListener('blur', () => {
           hideHoverTooltip();
+          setHover('');
         }, { signal });
         circle.addEventListener('keydown', (event) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -1047,6 +1195,7 @@ function abbreviatePath(url) {
       meshGraph.addEventListener('click', (event) => {
         if (event.target && event.target.dataset && event.target.dataset.nodeUrl) return;
         setSelection('');
+        setHover('');
         hideHoverTooltip();
       }, { signal });
 

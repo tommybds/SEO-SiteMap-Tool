@@ -1,0 +1,61 @@
+/* Form grids and filter grids. */
+
+form {
+  display: grid;
+  grid-template-columns: 1fr 120px 100px 100px;
+  gap: var(--s-3);
+  align-items: end;
+}
+
+.mesh-form {
+  grid-template-columns: minmax(260px, 1fr) 120px 120px;
+}
+
+.tech-form {
+  grid-template-columns: minmax(260px, 1fr) 120px;
+}
+
+.geo-form {
+  grid-template-columns: minmax(260px, 1fr) 120px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Filter grid for CSV previews */
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 120px 140px 140px 190px;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.filter-reset-btn {
+  background: #334155;
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: var(--text-base);
+  font-weight: 600;
+  width: 100%;
+  max-width: 190px;
+  white-space: nowrap;
+  min-height: var(--control-h-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.filter-reset-btn:hover {
+  background: #1e293b;
+  box-shadow: var(--shadow-sm);
+}

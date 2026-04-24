@@ -48,9 +48,54 @@ function t(key, vars = {}) {
       if (mode === 'tech') return t('mode_help_tech');
       if (mode === 'redirect') return t('mode_help_redirect');
       if (mode === 'accessibility') return t('mode_help_accessibility');
+      if (mode === 'security') return t('mode_help_security');
+      if (mode === 'images') return t('mode_help_images');
       if (mode === 'geo') return t('mode_help_geo');
       if (mode === 'action-plan') return t('mode_help_action_plan');
       return t('mode_help');
+    }
+
+    function setModeBtnLabel(btn, label) {
+      if (!btn) return;
+      const labelEl = btn.querySelector('.mode-btn-label');
+      if (labelEl) {
+        labelEl.textContent = label;
+      } else {
+        btn.textContent = label;
+      }
+    }
+
+    function setCategoryBtnLabel(btn, label) {
+      if (!btn) return;
+      const labelEl = btn.querySelector('.nav-category-label');
+      if (labelEl) {
+        labelEl.textContent = label;
+      } else {
+        btn.textContent = label;
+      }
+    }
+
+    function modeCategory(mode) {
+      return MODE_TO_CATEGORY[mode] || 'site';
+    }
+
+    function applyCategoryVisibility(mode) {
+      const cat = modeCategory(mode);
+      const groups = [
+        [modesSiteGroup, 'site', catSiteBtn],
+        [modesPageGroup, 'page', catPageBtn],
+        [modesSynthesisGroup, 'synthesis', catSynthesisBtn],
+      ];
+      groups.forEach(([group, groupCat, btn]) => {
+        if (group) {
+          if (groupCat === cat) group.removeAttribute('hidden');
+          else group.setAttribute('hidden', '');
+        }
+        if (btn) {
+          btn.classList.toggle('active', groupCat === cat);
+          btn.setAttribute('aria-selected', groupCat === cat ? 'true' : 'false');
+        }
+      });
     }
 
     function applyTranslations() {
@@ -61,13 +106,18 @@ function t(key, vars = {}) {
       }
       appTitle.textContent = t('app_title');
       appSubtitle.textContent = t('app_subtitle');
-      modeSitemapBtn.textContent = t('mode_sitemap');
-      modeMeshBtn.textContent = t('mode_mesh');
-      if (modeTechBtn) modeTechBtn.textContent = t('mode_tech');
-      if (modeRedirectBtn) modeRedirectBtn.textContent = t('mode_redirect');
-      if (modeAccessibilityBtn) modeAccessibilityBtn.textContent = t('mode_accessibility');
-      if (modeGeoBtn) modeGeoBtn.textContent = t('mode_geo');
-      if (modeActionPlanBtn) modeActionPlanBtn.textContent = t('mode_action_plan');
+      setModeBtnLabel(modeSitemapBtn, t('mode_sitemap'));
+      setModeBtnLabel(modeMeshBtn, t('mode_mesh'));
+      setModeBtnLabel(modeTechBtn, t('mode_tech'));
+      setModeBtnLabel(modeRedirectBtn, t('mode_redirect'));
+      setModeBtnLabel(modeAccessibilityBtn, t('mode_accessibility'));
+      setModeBtnLabel(modeGeoBtn, t('mode_geo'));
+      if (modeSecurityBtn) setModeBtnLabel(modeSecurityBtn, t('mode_security'));
+      if (modeImagesBtn) setModeBtnLabel(modeImagesBtn, t('mode_images'));
+      setModeBtnLabel(modeActionPlanBtn, t('mode_action_plan'));
+      if (catSiteBtn) setCategoryBtnLabel(catSiteBtn, t('nav_category_site'));
+      if (catPageBtn) setCategoryBtnLabel(catPageBtn, t('nav_category_page'));
+      if (catSynthesisBtn) setCategoryBtnLabel(catSynthesisBtn, t('nav_category_synthesis'));
       modeHelp.textContent = getModeHelpText();
       labelSitemap.textContent = t('label_sitemap');
       labelMaxUrls.textContent = t('label_max_urls');
@@ -92,6 +142,12 @@ function t(key, vars = {}) {
       if (labelAccessibilityTimeout) labelAccessibilityTimeout.textContent = t('label_accessibility_timeout');
       if (labelGeoUrl) labelGeoUrl.textContent = t('label_geo_url');
       if (labelGeoTimeout) labelGeoTimeout.textContent = t('label_geo_timeout');
+      if (labelSecurityUrl) labelSecurityUrl.textContent = t('label_security_url');
+      if (labelSecurityTimeout) labelSecurityTimeout.textContent = t('label_timeout');
+      if (securitySectionTitle) securitySectionTitle.textContent = t('security_section_title');
+      if (labelImagesUrl) labelImagesUrl.textContent = t('label_images_url');
+      if (labelImagesTimeout) labelImagesTimeout.textContent = t('label_timeout');
+      if (imagesSectionTitle) imagesSectionTitle.textContent = t('images_section_title');
       jobSectionTitle.textContent = t('job_section_title');
       meshSectionTitle.textContent = t('mesh_section_title');
       if (techSectionTitle) techSectionTitle.textContent = t('tech_section_title');
@@ -156,6 +212,8 @@ function t(key, vars = {}) {
       if (redirectRunBtn) setRedirectRunningState(redirectRunBtn.disabled);
       if (accessibilityRunBtn) setAccessibilityRunningState(accessibilityRunBtn.disabled);
       if (geoRunBtn) setGeoRunningState(geoRunBtn.disabled);
+      if (securityRunBtn) setSecurityRunningState(securityRunBtn.disabled);
+      if (imagesRunBtn) setImagesRunningState(imagesRunBtn.disabled);
       if (latestStatusPayload) {
         renderStatus(latestStatusPayload);
       } else if (!logTail.textContent.trim()) {
@@ -166,6 +224,16 @@ function t(key, vars = {}) {
       } else {
         meshInteractionHint.textContent = t('mesh_graph_collapsed_hint');
       }
+      // Localize the mesh filter pill labels.
+      const meshFilterLabel = document.getElementById('mesh-filter-label');
+      if (meshFilterLabel) meshFilterLabel.textContent = t('mesh_filter_label');
+      document.querySelectorAll('.mesh-filter-pill').forEach((pill) => {
+        const ctx = String(pill.dataset.context || '').toLowerCase();
+        if (ctx === 'content') pill.textContent = t('mesh_filter_content');
+        else if (ctx === 'menu') pill.textContent = t('mesh_filter_menu');
+        else if (ctx === 'footer') pill.textContent = t('mesh_filter_footer');
+        else if (ctx === 'breadcrumb') pill.textContent = t('mesh_filter_breadcrumb');
+      });
       if (latestTechPayload) {
         renderTech(latestTechPayload);
       }
@@ -177,6 +245,12 @@ function t(key, vars = {}) {
       }
       if (latestGeoPayload) {
         renderGeo(latestGeoPayload);
+      }
+      if (latestSecurityPayload) {
+        renderSecurity(latestSecurityPayload);
+      }
+      if (latestImagesPayload) {
+        renderImages(latestImagesPayload);
       }
       if (actionPlanCard) {
         renderActionPlan();
@@ -202,6 +276,8 @@ function t(key, vars = {}) {
       if (mode === 'tech') return 'tech';
       if (mode === 'redirect') return 'redirect';
       if (mode === 'accessibility') return 'accessibility';
+      if (mode === 'security') return 'security';
+      if (mode === 'images') return 'images';
       if (mode === 'geo') return 'geo';
       if (mode === 'action-plan') return 'action-plan';
       return 'sitemap';
@@ -236,6 +312,18 @@ function t(key, vars = {}) {
       geoRunBtn.textContent = running ? t('geo_run_btn_running') : t('geo_run_btn_idle');
     }
 
+    function setSecurityRunningState(running) {
+      if (!securityRunBtn) return;
+      securityRunBtn.disabled = running;
+      securityRunBtn.textContent = running ? t('security_run_btn_running') : t('security_run_btn_idle');
+    }
+
+    function setImagesRunningState(running) {
+      if (!imagesRunBtn) return;
+      imagesRunBtn.disabled = running;
+      imagesRunBtn.textContent = running ? t('images_run_btn_running') : t('images_run_btn_idle');
+    }
+
     function applyMeshGraphVisibility() {
       const wrap = meshGraph ? meshGraph.closest('.mesh-graph-wrap') : null;
       const visible = !!meshGraphVisible;
@@ -257,31 +345,28 @@ function t(key, vars = {}) {
     }
 
     function keepActiveModeButtonVisible() {
-      const activeModeBtn = [modeSitemapBtn, modeMeshBtn, modeTechBtn, modeRedirectBtn, modeAccessibilityBtn, modeGeoBtn, modeActionPlanBtn]
+      const activeModeBtn = [modeSitemapBtn, modeMeshBtn, modeTechBtn, modeRedirectBtn, modeAccessibilityBtn, modeSecurityBtn, modeImagesBtn, modeGeoBtn, modeActionPlanBtn]
         .find((btn) => btn && btn.classList.contains('active'));
       if (!activeModeBtn || typeof activeModeBtn.scrollIntoView !== 'function') return;
       activeModeBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
 
     function setMode(mode, syncUrl = true) {
-      currentMode = mode === 'mesh' || mode === 'tech' || mode === 'redirect' || mode === 'accessibility' || mode === 'geo' || mode === 'action-plan' ? mode : 'sitemap';
-      if (currentMode === 'tech' && !hasTechMode) {
-        currentMode = 'sitemap';
-      }
-      if (currentMode === 'redirect' && !hasRedirectMode) {
-        currentMode = 'sitemap';
-      }
-      if (currentMode === 'accessibility' && !hasAccessibilityMode) {
-        currentMode = 'sitemap';
-      }
-      if (currentMode === 'geo' && !hasGeoMode) {
-        currentMode = 'sitemap';
-      }
+      const allowed = ['mesh', 'tech', 'redirect', 'accessibility', 'security', 'images', 'geo', 'action-plan'];
+      currentMode = allowed.includes(mode) ? mode : 'sitemap';
+      if (currentMode === 'tech' && !hasTechMode) currentMode = 'sitemap';
+      if (currentMode === 'redirect' && !hasRedirectMode) currentMode = 'sitemap';
+      if (currentMode === 'accessibility' && !hasAccessibilityMode) currentMode = 'sitemap';
+      if (currentMode === 'security' && !hasSecurityMode) currentMode = 'sitemap';
+      if (currentMode === 'images' && !hasImagesMode) currentMode = 'sitemap';
+      if (currentMode === 'geo' && !hasGeoMode) currentMode = 'sitemap';
       sitemapModePanel.style.display = currentMode === 'sitemap' ? 'block' : 'none';
       meshModePanel.style.display = currentMode === 'mesh' ? 'block' : 'none';
       if (techModePanel) techModePanel.style.display = currentMode === 'tech' ? 'block' : 'none';
       if (redirectModePanel) redirectModePanel.style.display = currentMode === 'redirect' ? 'block' : 'none';
       if (accessibilityModePanel) accessibilityModePanel.style.display = currentMode === 'accessibility' ? 'block' : 'none';
+      if (securityModePanel) securityModePanel.style.display = currentMode === 'security' ? 'block' : 'none';
+      if (imagesModePanel) imagesModePanel.style.display = currentMode === 'images' ? 'block' : 'none';
       if (geoModePanel) geoModePanel.style.display = currentMode === 'geo' ? 'block' : 'none';
       if (actionPlanModePanel) actionPlanModePanel.style.display = currentMode === 'action-plan' ? 'block' : 'none';
       resultCard.style.display = currentMode === 'sitemap' && sitemapHasOutput ? 'block' : 'none';
@@ -290,6 +375,8 @@ function t(key, vars = {}) {
       if (techCard) techCard.style.display = currentMode === 'tech' && !!latestTechPayload ? 'block' : 'none';
       if (redirectCard) redirectCard.style.display = currentMode === 'redirect' && !!latestRedirectPayload ? 'block' : 'none';
       if (accessibilityCard) accessibilityCard.style.display = currentMode === 'accessibility' && !!latestAccessibilityPayload ? 'block' : 'none';
+      if (securityCard) securityCard.style.display = currentMode === 'security' && !!latestSecurityPayload ? 'block' : 'none';
+      if (imagesCard) imagesCard.style.display = currentMode === 'images' && !!latestImagesPayload ? 'block' : 'none';
       if (geoCard) geoCard.style.display = currentMode === 'geo' && !!latestGeoPayload ? 'block' : 'none';
       if (actionPlanCard) actionPlanCard.style.display = currentMode === 'action-plan' ? 'block' : 'none';
       modeSitemapBtn.classList.toggle('active', currentMode === 'sitemap');
@@ -297,6 +384,8 @@ function t(key, vars = {}) {
       if (modeTechBtn) modeTechBtn.classList.toggle('active', currentMode === 'tech');
       if (modeRedirectBtn) modeRedirectBtn.classList.toggle('active', currentMode === 'redirect');
       if (modeAccessibilityBtn) modeAccessibilityBtn.classList.toggle('active', currentMode === 'accessibility');
+      if (modeSecurityBtn) modeSecurityBtn.classList.toggle('active', currentMode === 'security');
+      if (modeImagesBtn) modeImagesBtn.classList.toggle('active', currentMode === 'images');
       if (modeGeoBtn) modeGeoBtn.classList.toggle('active', currentMode === 'geo');
       if (modeActionPlanBtn) modeActionPlanBtn.classList.toggle('active', currentMode === 'action-plan');
       modeSitemapBtn.setAttribute('aria-selected', currentMode === 'sitemap' ? 'true' : 'false');
@@ -304,9 +393,12 @@ function t(key, vars = {}) {
       if (modeTechBtn) modeTechBtn.setAttribute('aria-selected', currentMode === 'tech' ? 'true' : 'false');
       if (modeRedirectBtn) modeRedirectBtn.setAttribute('aria-selected', currentMode === 'redirect' ? 'true' : 'false');
       if (modeAccessibilityBtn) modeAccessibilityBtn.setAttribute('aria-selected', currentMode === 'accessibility' ? 'true' : 'false');
+      if (modeSecurityBtn) modeSecurityBtn.setAttribute('aria-selected', currentMode === 'security' ? 'true' : 'false');
+      if (modeImagesBtn) modeImagesBtn.setAttribute('aria-selected', currentMode === 'images' ? 'true' : 'false');
       if (modeGeoBtn) modeGeoBtn.setAttribute('aria-selected', currentMode === 'geo' ? 'true' : 'false');
       if (modeActionPlanBtn) modeActionPlanBtn.setAttribute('aria-selected', currentMode === 'action-plan' ? 'true' : 'false');
       modeHelp.textContent = getModeHelpText();
+      applyCategoryVisibility(currentMode);
       if (currentMode === 'mesh') {
         applyMeshGraphVisibility();
       }
@@ -360,6 +452,12 @@ function t(key, vars = {}) {
       }
       if (accessibilityUrlInput && !accessibilityUrlInput.value.trim()) {
         accessibilityUrlInput.value = root;
+      }
+      if (securityUrlInput && !securityUrlInput.value.trim()) {
+        securityUrlInput.value = root;
+      }
+      if (imagesUrlInput && !imagesUrlInput.value.trim()) {
+        imagesUrlInput.value = root;
       }
       if (geoUrlInput && !geoUrlInput.value.trim()) {
         geoUrlInput.value = root;

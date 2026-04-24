@@ -1,0 +1,81 @@
+/* Wrappers, cards, rows, footer. */
+
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-4);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: var(--s-5);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--s-4);
+}
+
+.card.csv-full-width {
+  width: 100dvw;
+  max-width: 100dvw;
+  margin-left: calc(50% - 50dvw);
+  margin-right: calc(50% - 50dvw);
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+@supports not (width: 100dvw) {
+  .card.csv-full-width {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+}
+
+.card.csv-full-width .table-wrap {
+  max-height: 420px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+#result-card .row {
+  margin-bottom: var(--s-3);
+}
+
+.download-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.app-footer {
+  margin: var(--s-6) 0 var(--s-1);
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.app-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
+}

@@ -57,6 +57,8 @@ function normalizeActionPlanPriority(priority) {
       if (safe === 'redirect') return t('mode_redirect');
       if (safe === 'accessibility') return t('mode_accessibility');
       if (safe === 'geo') return t('mode_geo');
+      if (safe === 'security') return t('mode_security');
+      if (safe === 'images') return t('mode_images');
       return t('mode_sitemap');
     }
 
@@ -135,6 +137,86 @@ function normalizeActionPlanPriority(priority) {
         return { owner: 'content', effort: 'medium', quickWin: false };
       }
       return { owner: 'seo', effort: 'medium', quickWin: false };
+    }
+
+    function classifySecurityRecommendation(key) {
+      const safe = String(key || '').trim().toLowerCase();
+      if (safe === 'security_reco_https' || safe === 'security_reco_http_redirect' || safe === 'security_reco_mixed_content') {
+        return { owner: 'dev', effort: 'medium', quickWin: false };
+      }
+      if (safe === 'security_reco_hsts' || safe === 'security_reco_csp' || safe === 'security_reco_csp_unsafe'
+        || safe === 'security_reco_frame_protection' || safe === 'security_reco_content_type_options'
+        || safe === 'security_reco_referrer_policy' || safe === 'security_reco_permissions_policy'
+        || safe === 'security_reco_server_leak' || safe === 'security_reco_cookies') {
+        return { owner: 'dev', effort: 'low', quickWin: true };
+      }
+      return { owner: 'dev', effort: 'low', quickWin: true };
+    }
+
+    function collectSecurityActionPlanFindings() {
+      if (typeof latestSecurityPayload === 'undefined' || !latestSecurityPayload || typeof latestSecurityPayload !== 'object') return [];
+      const checklist = latestSecurityPayload.checklist && typeof latestSecurityPayload.checklist === 'object' ? latestSecurityPayload.checklist : {};
+      const buckets = [
+        { priority: 'high', keys: Array.isArray(checklist.high) ? checklist.high : [] },
+        { priority: 'medium', keys: Array.isArray(checklist.medium) ? checklist.medium : [] },
+        { priority: 'low', keys: Array.isArray(checklist.low) ? checklist.low : [] },
+      ];
+      const entity = String(latestSecurityPayload.final_url || latestSecurityPayload.url || '').trim();
+      const findings = [];
+      buckets.forEach((bucket) => {
+        bucket.keys.slice(0, 4).forEach((key) => {
+          const meta = classifySecurityRecommendation(key);
+          const finding = createActionPlanFinding({
+            source: 'security',
+            owner: meta.owner,
+            priority: bucket.priority,
+            effort: meta.effort,
+            quickWin: meta.quickWin,
+            title: (typeof localizeSecurityRecommendation === 'function') ? localizeSecurityRecommendation(key) : String(key),
+            entity,
+          });
+          if (finding) findings.push(finding);
+        });
+      });
+      return findings;
+    }
+
+    function classifyImagesRecommendation(key) {
+      const safe = String(key || '').trim().toLowerCase();
+      if (safe === 'images_reco_alt') return { owner: 'content', effort: 'low', quickWin: true };
+      if (safe === 'images_reco_dimensions' || safe === 'images_reco_lazy' || safe === 'images_reco_responsive') {
+        return { owner: 'dev', effort: 'medium', quickWin: false };
+      }
+      if (safe === 'images_reco_modern_format') return { owner: 'dev', effort: 'high', quickWin: false };
+      return { owner: 'dev', effort: 'low', quickWin: true };
+    }
+
+    function collectImagesActionPlanFindings() {
+      if (typeof latestImagesPayload === 'undefined' || !latestImagesPayload || typeof latestImagesPayload !== 'object') return [];
+      const checklist = latestImagesPayload.checklist && typeof latestImagesPayload.checklist === 'object' ? latestImagesPayload.checklist : {};
+      const buckets = [
+        { priority: 'high', keys: Array.isArray(checklist.high) ? checklist.high : [] },
+        { priority: 'medium', keys: Array.isArray(checklist.medium) ? checklist.medium : [] },
+        { priority: 'low', keys: Array.isArray(checklist.low) ? checklist.low : [] },
+      ];
+      const entity = String(latestImagesPayload.final_url || latestImagesPayload.url || '').trim();
+      const findings = [];
+      buckets.forEach((bucket) => {
+        bucket.keys.slice(0, 4).forEach((key) => {
+          const meta = classifyImagesRecommendation(key);
+          const finding = createActionPlanFinding({
+            source: 'images',
+            owner: meta.owner,
+            priority: bucket.priority,
+            effort: meta.effort,
+            quickWin: meta.quickWin,
+            title: (typeof localizeImagesRecommendation === 'function') ? localizeImagesRecommendation(key) : String(key),
+            entity,
+          });
+          if (finding) findings.push(finding);
+        });
+      });
+      return findings;
     }
 
     function classifyAccessibilityRecommendation(key) {
@@ -343,6 +425,8 @@ function normalizeActionPlanPriority(priority) {
         ...collectRedirectActionPlanFindings(),
         ...collectAccessibilityActionPlanFindings(),
         ...collectGeoActionPlanFindings(),
+        ...collectSecurityActionPlanFindings(),
+        ...collectImagesActionPlanFindings(),
       ]);
 
       const counts = {
