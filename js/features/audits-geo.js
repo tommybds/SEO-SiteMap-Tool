@@ -46,6 +46,37 @@ const localizeGeoRecommendation = buildLabelLookup({
   geo_reco_unblock_ai_crawlers: 'geo_reco_unblock_ai_crawlers',
 });
 
+const GEO_CHECK_TO_RECO = {
+  geo_canonical: 'geo_reco_add_canonical',
+  geo_open_graph: 'geo_reco_add_open_graph',
+  geo_twitter_card: 'geo_reco_add_twitter_card',
+  geo_h1_unique: 'geo_reco_fix_h1',
+  geo_structured_data: 'geo_reco_add_structured_data',
+  geo_jsonld_validity: 'geo_reco_fix_jsonld',
+  geo_organization_entity: 'geo_reco_add_organization_entity',
+  geo_author_signal: 'geo_reco_add_author_signals',
+  geo_date_metadata: 'geo_reco_add_dates',
+  geo_freshness: 'geo_reco_refresh_content',
+  geo_qa_format: 'geo_reco_improve_qa_format',
+  geo_faq_markup: 'geo_reco_add_faq_markup',
+  geo_content_depth: 'geo_reco_deepen_content',
+  geo_internal_links: 'geo_reco_improve_internal_links',
+  geo_citations_external: 'geo_reco_add_external_citations',
+  geo_heading_anchors: 'geo_reco_add_heading_anchors',
+  geo_llms_txt: 'geo_reco_add_llms_txt',
+  geo_ai_crawlers_allowed: 'geo_reco_unblock_ai_crawlers',
+};
+
+function localizeGeoChecklistKey(key) {
+  const safe = String(key || '').trim();
+  if (safe.startsWith('geo_reco_')) {
+    return localizeGeoRecommendation(safe);
+  }
+  const recoKey = GEO_CHECK_TO_RECO[safe];
+  if (recoKey) return t(recoKey);
+  return localizeGeoCheckLabel(safe);
+}
+
 function renderGeoChecksTableWithWeight(container, checks) {
   if (!container) return;
   if (!checks.length) {
@@ -378,7 +409,7 @@ function renderGeo(audit) {
 
   geoRecos.innerHTML = `
     <div class="tech-recos-head">${escapeHtml(t('geo_recos_title'))}</div>
-    ${renderPriorityChecklist(checklist, recommendations, localizeGeoRecommendation, 'geo')}
+    ${renderPriorityChecklist(checklist, recommendations, localizeGeoChecklistKey, 'geo')}
     <div class="tech-details-grid">${detailsRows}</div>
     ${renderGeoAiBots(metrics)}
     ${renderGeoSnippets(audit, statusByKey)}
