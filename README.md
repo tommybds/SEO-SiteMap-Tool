@@ -1,18 +1,32 @@
 # SEO Tool (PHP + JS + Python)
 
-Deploy-ready web tool for Plesk. The UI is now organized in three top-level categories:
+![Last commit](https://img.shields.io/github/last-commit/tommybds/SEO-SiteMap-Tool)
+![Repo size](https://img.shields.io/github/repo-size/tommybds/SEO-SiteMap-Tool)
+![PHP](https://img.shields.io/badge/PHP-8.1+-777BB4?logo=php&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![License: Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
+
+Deploy-ready web tool for Plesk. The UI is organized in two top-level categories,
+plus a persistent action plan that aggregates findings from every audit you run:
 
 - **Audit site** (batch, multi-URL): `Audit sitemap`, `Maillage interne`
-- **Audit page** (URL unique): `Audit SEO technique`, `Audit sécurité`, `Audit accessibilité`, `Audit images`, `Audit GEO`, `Test redirections`
-- **Synthèse**: `Plan d'action`
+- **Audit page** (single URL): `Audit SEO technique`, `Audit GEO`, `Audit sécurité`, `Audit accessibilité`, `Audit images`, `Test redirections`
+- **Plan d'action** (persistent bottom panel): aggregates findings from every audit you've run, classifies them by owner (SEO / Dev / Content), priority and effort.
 
 ### Demo
 
 - [https://tools.tommy-bordas.fr/](https://tools.tommy-bordas.fr/)
 
+### Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the full release history (FR + EN). The version
+pill at the bottom of the UI also opens a bilingual changelog modal.
+
 ### Features
 
-- Two-level navigation: top-level categories (Site / Page / Synthèse) + contextual sub-tabs
+- Two-level navigation: top-level categories (Site / Page) + contextual sub-tabs
+- Persistent **action plan** at the bottom of the page: appears as soon as one audit has run, aggregates findings across audits, classifies them by owner (SEO / Dev / Content), priority and effort. Collapsible, state persisted in `localStorage`.
 - Recursive sitemap crawling (`sitemapindex` + `urlset`)
 - On-page SEO checks (title, meta description, H1, indexability, robots meta)
 - Technical SEO checks (`hreflang`, cross-domain/invalid canonical, Open Graph, Twitter Cards, JSON-LD)
@@ -27,8 +41,12 @@ Deploy-ready web tool for Plesk. The UI is now organized in three top-level cate
 - **Security headers audit** (HTTP headers: HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, cookies flags, mixed-content detection)
 - Accessibility pre-audit (RGAA 4.1.2 / WCAG 2.1 AA: technical + publication obligations)
 - **Images audit** (alt coverage, width/height for CLS protection, lazy loading ratio, modern formats webp/avif, responsive `srcset`/`<picture>`)
-- GEO audit focused on AI-answer readiness signals (entity, structure, freshness, Q/A patterns)
-- Prioritized action-plan view aggregating findings by source and owner (includes security + images)
+- **GEO audit** (Generative Engine Optimization, AI-answer readiness):
+  - `/llms.txt` presence + per-bot `robots.txt` access check for 14 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, Applebot-Extended, CCBot, Bytespider, Meta-ExternalAgent, cohere-ai, DuckAssistBot, …)
+  - JSON-LD validation against required fields per `@type` (Article, Organization, FAQPage, Person, HowTo) instead of just counting types
+  - canonical / Open Graph / Twitter Card / single-H1 / H2-anchor (TOC) checks
+  - copy-paste snippets next to each recommendation (canonical, OG, Article dates, Person + sameAs, FAQPage, Organization, `/llms.txt`, AI `robots.txt`)
+  - per-check weight surfaced in the table to help prioritize
 - Smart URL normalization in all URL fields (`example.com` -> `https://example.com`)
 - Shareable report URL (`?job_id=...`) + copy button
 - Bilingual UI FR/EN (`?lang=fr` or `?lang=en`)
@@ -132,3 +150,15 @@ The following are planned and will reuse the established patterns:
 - If `shell_exec` is disabled by your host, jobs cannot start.
 - Runtime files are excluded from Git via `.gitignore`.
 - All static assets use a `?v=YYYYMMDD-N` cache-buster query string. Bump it when you ship front-end changes so browsers re-fetch CSS/JS.
+
+## License
+
+This project is released under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+**You may** use, copy, modify, and redistribute the source for personal use,
+research, education, hobby projects, charity, or public-interest
+organizations. **You may not** use it for commercial purposes (selling
+access, integrating into a paid product/service, or any activity primarily
+intended for commercial advantage).
+
+Copyright © 2025-2026 [Tommy Bordas](https://tommy-bordas.fr/).

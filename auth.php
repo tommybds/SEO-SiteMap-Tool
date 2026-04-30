@@ -476,7 +476,7 @@ function html_layout(string $title, string $body, ?array $user = null): string
         . '<link rel="preconnect" href="https://rsms.me/">'
         . '<link rel="stylesheet" href="https://rsms.me/inter/inter.css">'
         . '<link rel="stylesheet" href="styles.css?v=20260430-3">'
-        . '<link rel="stylesheet" href="css/auth.css?v=20260430-3">'
+        . '<link rel="stylesheet" href="css/auth.css?v=20260430-4">'
         . '</head><body><div class="wrap">'
         . $userBar
         . '<div class="card">'

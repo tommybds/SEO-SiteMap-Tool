@@ -17,6 +17,23 @@ const localizeAccessibilityCheckLabel = buildLabelLookup({
   a11y_accessibility_plan: 'a11y_accessibility_plan',
   a11y_accessibility_multiyear: 'a11y_accessibility_multiyear',
   a11y_accessibility_status_mention: 'a11y_accessibility_status_mention',
+  a11y_doctype_html5: 'a11y_doctype_html5',
+  a11y_charset_declared: 'a11y_charset_declared',
+  a11y_viewport_zoom_allowed: 'a11y_viewport_zoom_allowed',
+  a11y_heading_hierarchy: 'a11y_heading_hierarchy',
+  a11y_tables_accessible: 'a11y_tables_accessible',
+  a11y_fieldset_legend: 'a11y_fieldset_legend',
+  a11y_no_autoplay_media: 'a11y_no_autoplay_media',
+  a11y_rgaa5_focus_visible: 'a11y_rgaa5_focus_visible',
+  a11y_rgaa5_target_size: 'a11y_rgaa5_target_size',
+  a11y_rgaa5_autocomplete_personal: 'a11y_rgaa5_autocomplete_personal',
+  a11y_rgaa5_captcha_alternative: 'a11y_rgaa5_captcha_alternative',
+  a11y_rgaa5_drag_alternative: 'a11y_rgaa5_drag_alternative',
+  a11y_rgaa5_consistent_help: 'a11y_rgaa5_consistent_help',
+  a11y_rgaa5_modern_input_types: 'a11y_rgaa5_modern_input_types',
+  a11y_rgaa5_landmarks_complete: 'a11y_rgaa5_landmarks_complete',
+  a11y_rgaa5_video_captions: 'a11y_rgaa5_video_captions',
+  a11y_rgaa5_audio_transcript: 'a11y_rgaa5_audio_transcript',
 });
 
 const localizeAccessibilityRecommendation = buildLabelLookup({
@@ -35,6 +52,23 @@ const localizeAccessibilityRecommendation = buildLabelLookup({
   a11y_reco_publish_multiyear: 'a11y_reco_publish_multiyear',
   a11y_reco_publish_plan: 'a11y_reco_publish_plan',
   a11y_reco_add_status_mention: 'a11y_reco_add_status_mention',
+  a11y_reco_add_doctype_html5: 'a11y_reco_add_doctype_html5',
+  a11y_reco_declare_charset: 'a11y_reco_declare_charset',
+  a11y_reco_allow_zoom: 'a11y_reco_allow_zoom',
+  a11y_reco_fix_heading_hierarchy: 'a11y_reco_fix_heading_hierarchy',
+  a11y_reco_fix_tables: 'a11y_reco_fix_tables',
+  a11y_reco_add_fieldset_legend: 'a11y_reco_add_fieldset_legend',
+  a11y_reco_remove_autoplay: 'a11y_reco_remove_autoplay',
+  a11y_reco_rgaa5_restore_focus_visible: 'a11y_reco_rgaa5_restore_focus_visible',
+  a11y_reco_rgaa5_enlarge_targets: 'a11y_reco_rgaa5_enlarge_targets',
+  a11y_reco_rgaa5_add_autocomplete: 'a11y_reco_rgaa5_add_autocomplete',
+  a11y_reco_rgaa5_offer_captcha_alternative: 'a11y_reco_rgaa5_offer_captcha_alternative',
+  a11y_reco_rgaa5_drag_alternative: 'a11y_reco_rgaa5_drag_alternative',
+  a11y_reco_rgaa5_consistent_help: 'a11y_reco_rgaa5_consistent_help',
+  a11y_reco_rgaa5_modern_input_types: 'a11y_reco_rgaa5_modern_input_types',
+  a11y_reco_rgaa5_complete_landmarks: 'a11y_reco_rgaa5_complete_landmarks',
+  a11y_reco_rgaa5_add_video_captions: 'a11y_reco_rgaa5_add_video_captions',
+  a11y_reco_rgaa5_add_audio_transcript: 'a11y_reco_rgaa5_add_audio_transcript',
 });
 
 function renderAccessibility(audit) {
@@ -114,11 +148,39 @@ function renderAccessibility(audit) {
     </div>
   `;
 
+  // RGAA 5 diff: count + summarize the rgaa5_only checks for prospecting leverage.
+  let rgaa5SummaryHtml = '';
+  if (referenceStandard === 'rgaa5') {
+    const rgaa5Checks = checks.filter((c) => c && c.rgaa5_only === true);
+    if (rgaa5Checks.length > 0) {
+      const rPass = rgaa5Checks.filter((c) => String(c.status).toLowerCase() === 'pass').length;
+      const rWarn = rgaa5Checks.filter((c) => String(c.status).toLowerCase() === 'warn').length;
+      const rFail = rgaa5Checks.filter((c) => String(c.status).toLowerCase() === 'fail').length;
+      rgaa5SummaryHtml = `
+        <div class="a11y-rgaa5-summary">
+          <div class="a11y-rgaa5-summary-head">
+            <span class="a11y-rgaa5-summary-badge">RGAA 5</span>
+            <span class="a11y-rgaa5-summary-title">${escapeHtml(t('accessibility_rgaa5_diff_title'))}</span>
+          </div>
+          <div class="a11y-rgaa5-summary-stats">
+            <span class="a11y-rgaa5-stat total">${rgaa5Checks.length} ${escapeHtml(t('accessibility_rgaa5_diff_total'))}</span>
+            <span class="a11y-rgaa5-stat pass"><b>${rPass}</b> ${escapeHtml(t('accessibility_kpi_pass'))}</span>
+            <span class="a11y-rgaa5-stat warn"><b>${rWarn}</b> ${escapeHtml(t('accessibility_kpi_warn'))}</span>
+            <span class="a11y-rgaa5-stat fail"><b>${rFail}</b> ${escapeHtml(t('accessibility_kpi_fail'))}</span>
+          </div>
+          <p class="a11y-rgaa5-summary-help">${escapeHtml(t('accessibility_rgaa5_diff_help'))}</p>
+        </div>
+      `;
+    }
+  }
+
   renderAuditChecksTable(accessibilityChecks, checks, {
     prefix: 'accessibility',
     localizeLabel: localizeAccessibilityCheckLabel,
     emptyKey: 'accessibility_checks_empty',
     titleKey: 'accessibility_checks_title',
+    decorateLabel: (check) => check && check.rgaa5_only ? ' <span class="a11y-rgaa5-row-badge">RGAA 5</span>' : '',
+    beforeTable: rgaa5SummaryHtml,
   });
 
   const referenceStandardDetail = referenceStandard === 'rgaa5'

@@ -427,6 +427,80 @@
     .a11y-pill.pass { background: #ecfdf5; border-color: #86efac; color: #166534; }
     .a11y-pill.warn { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
     .a11y-pill.fail { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+
+    /* RGAA 5 diff visibility: summary banner + per-row badge */
+    .a11y-rgaa5-summary {
+      margin: 14px 0;
+      padding: 14px 16px;
+      border: 1px solid #c7d2fe;
+      border-left: 4px solid #4f46e5;
+      background: linear-gradient(0deg, #ffffff, #ffffff), #eef2ff;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .a11y-rgaa5-summary-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .a11y-rgaa5-summary-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #4f46e5;
+      color: #fff;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .a11y-rgaa5-summary-title {
+      font-weight: 700;
+      color: #1e1b4b;
+      font-size: 14px;
+    }
+    .a11y-rgaa5-summary-stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .a11y-rgaa5-stat {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--muted-strong);
+    }
+    .a11y-rgaa5-stat b { font-weight: 700; }
+    .a11y-rgaa5-stat.total { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+    .a11y-rgaa5-stat.pass { background: #ecfdf5; border-color: #86efac; color: #166534; }
+    .a11y-rgaa5-stat.warn { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+    .a11y-rgaa5-stat.fail { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+    .a11y-rgaa5-summary-help {
+      margin: 0;
+      color: var(--muted-strong);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .a11y-rgaa5-row-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 7px;
+      background: #eef2ff;
+      color: #4338ca;
+      border: 1px solid #c7d2fe;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
     .a11y-signals-block {
       border: 1px solid var(--border);
       border-radius: 12px;

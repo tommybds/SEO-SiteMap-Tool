@@ -306,6 +306,27 @@ function a11y_fetch_with_redirects(string $url, int $timeout, int $maxRedirects)
     }
 }
 
+function a11y_xpath_literal(string $value): string
+{
+    if (!str_contains($value, "'")) {
+        return "'" . $value . "'";
+    }
+    if (!str_contains($value, '"')) {
+        return '"' . $value . '"';
+    }
+    $parts = explode("'", $value);
+    $escaped = [];
+    foreach ($parts as $i => $part) {
+        if ($part !== '') {
+            $escaped[] = "'" . $part . "'";
+        }
+        if ($i < count($parts) - 1) {
+            $escaped[] = '"\'"';
+        }
+    }
+    return 'concat(' . implode(',', $escaped) . ')';
+}
+
 function a11y_dom_first_attr(DOMXPath $xpath, string $query, string $attribute): string
 {
     $nodes = $xpath->query($query);
@@ -421,6 +442,38 @@ function a11y_parse_html_signals(string $html, string $finalUrl): array
         'has_multiyear_schema' => false,
         'has_action_plan' => false,
         'has_status_mention' => false,
+        // RGAA 5 / WCAG 2.2 signals
+        'focus_outline_killed' => false,
+        'focus_visible_override' => false,
+        'small_target_total' => 0,
+        'small_target_examples' => [],
+        'personal_input_total' => 0,
+        'personal_input_missing_autocomplete' => 0,
+        'has_captcha_widget' => false,
+        'captcha_kinds' => [],
+        'draggable_total' => 0,
+        'has_help_link' => false,
+        'inputs_text_should_be_typed_total' => 0,
+        'inputs_text_should_be_typed_examples' => [],
+        'has_header_landmark' => false,
+        'has_nav_landmark' => false,
+        'has_footer_landmark' => false,
+        'video_total' => 0,
+        'video_missing_captions' => 0,
+        'autoplay_media_total' => 0,
+        'audio_total' => 0,
+        'audio_missing_transcript_hint' => 0,
+        'doctype_html5' => false,
+        'charset_declared' => false,
+        'viewport_blocks_zoom' => false,
+        'heading_skip_levels' => 0,
+        'h1_count' => 0,
+        'tables_total' => 0,
+        'tables_missing_caption' => 0,
+        'tables_missing_th' => 0,
+        'fieldset_grouped_inputs_total' => 0,
+        'fieldset_missing_legend' => 0,
+        'lang_changes_inline_total' => 0,
     ];
 
     if (!class_exists('DOMDocument')) {
@@ -429,6 +482,11 @@ function a11y_parse_html_signals(string $html, string $finalUrl): array
     if (trim($html) === '') {
         return $empty;
     }
+
+    // Doctype detection (RGAA 8.1) — must happen before DOMDocument strips it.
+    $doctypeHtml5 = (bool) preg_match('/<!doctype\s+html\s*>/i', substr($html, 0, 200));
+    // Charset declared (RGAA 8.5) — meta charset or http-equiv.
+    $charsetDeclared = (bool) preg_match('/<meta[^>]+charset\s*=\s*["\']?[a-z0-9_-]+/i', $html);
 
     libxml_use_internal_errors(true);
     $dom = new DOMDocument();
@@ -440,11 +498,18 @@ function a11y_parse_html_signals(string $html, string $finalUrl): array
     $xpath = new DOMXPath($dom);
     $htmlLang = trim((string) a11y_dom_first_attr($xpath, '//html', 'lang'));
     $title = trim((string) $dom->getElementsByTagName('title')->item(0)?->textContent);
-    $viewportPresent = a11y_dom_first_attr(
+    $viewportContent = a11y_dom_first_attr(
         $xpath,
         '//meta[translate(@name,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="viewport"]',
         'content'
-    ) !== '';
+    );
+    $viewportPresent = $viewportContent !== '';
+    $viewportLow = strtolower(str_replace(' ', '', $viewportContent));
+    $viewportBlocksZoom = (
+        str_contains($viewportLow, 'user-scalable=no')
+        || str_contains($viewportLow, 'user-scalable=0')
+        || preg_match('/maximum-scale=(?:1(?!\d)|0?\.\d+)/', $viewportLow)
+    ) ? true : false;
 
     $mainLandmark = false;
     $mainNodes = $xpath->query('//main | //*[@role="main"]');
@@ -587,6 +652,353 @@ function a11y_parse_html_signals(string $html, string $finalUrl): array
     $pageText = a11y_to_lower(trim((string) preg_replace('/\s+/u', ' ', strip_tags($html))));
     $hasStatusMention = (bool) preg_match('/accessibilit(?:e|é)\s*:\s*(totalement|partiellement|non)\s+conforme/u', $pageText);
 
+    // ---- RGAA 5 / WCAG 2.2 signals ---------------------------------------
+
+    // Focus visible (SC 2.4.13): scan inline <style> blocks + style attributes for outline:0/none.
+    $focusOutlineKilled = false;
+    $focusVisibleOverride = false;
+    $styleNodes = $xpath->query('//style');
+    $cssBuffer = '';
+    if ($styleNodes instanceof DOMNodeList) {
+        foreach ($styleNodes as $node) {
+            $cssBuffer .= ' ' . (string) $node->textContent;
+        }
+    }
+    // Add inline style attributes too (rare but possible)
+    $inlineStyles = $xpath->query('//*[@style]');
+    if ($inlineStyles instanceof DOMNodeList) {
+        foreach ($inlineStyles as $node) {
+            if ($node instanceof DOMElement) {
+                $cssBuffer .= ' ' . (string) $node->getAttribute('style');
+            }
+        }
+    }
+    $cssLower = strtolower($cssBuffer);
+    if (preg_match('/(?::focus|:focus-within|button|a|input|select|textarea|\*)\s*[^{]*\{[^}]*outline\s*:\s*(?:none|0(?!\.)|0px)\b[^}]*\}/i', $cssBuffer)) {
+        $focusOutlineKilled = true;
+    }
+    if (preg_match('/:focus-visible[^{]*\{[^}]*outline\s*:\s*(?!none|0(?!\.)|0px)/i', $cssBuffer)) {
+        $focusVisibleOverride = true;
+    }
+
+    // Target size (SC 2.5.8): interactive elements with explicit small dimensions.
+    $smallTargetTotal = 0;
+    $smallTargetExamples = [];
+    $sizeRe = '/(?:^|;|\s)(width|height)\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*(px|rem|em|pt)?\b/i';
+    $interactiveNodes = $xpath->query('//button | //a[@href] | //input[not(translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="hidden")] | //select | //textarea | //*[@role="button" or @role="link" or @role="checkbox" or @role="radio" or @role="tab"]');
+    if ($interactiveNodes instanceof DOMNodeList) {
+        foreach ($interactiveNodes as $node) {
+            if (!($node instanceof DOMElement)) {
+                continue;
+            }
+            $w = null;
+            $h = null;
+            // HTML width/height attributes (in px by spec).
+            if ($node->hasAttribute('width')) {
+                $val = trim((string) $node->getAttribute('width'));
+                if (is_numeric($val)) {
+                    $w = (float) $val;
+                }
+            }
+            if ($node->hasAttribute('height')) {
+                $val = trim((string) $node->getAttribute('height'));
+                if (is_numeric($val)) {
+                    $h = (float) $val;
+                }
+            }
+            // Inline style.
+            if ($node->hasAttribute('style')) {
+                $style = (string) $node->getAttribute('style');
+                if (preg_match_all($sizeRe, $style, $matches, PREG_SET_ORDER)) {
+                    foreach ($matches as $m) {
+                        $prop = strtolower($m[1]);
+                        $num = (float) $m[2];
+                        $unit = strtolower($m[3] ?? 'px');
+                        $px = $unit === 'px' ? $num : ($unit === 'pt' ? $num * 1.333 : $num * 16); // approx rem/em as 16px
+                        if ($prop === 'width') {
+                            $w = $px;
+                        } elseif ($prop === 'height') {
+                            $h = $px;
+                        }
+                    }
+                }
+            }
+            if ($w !== null && $h !== null && $w > 0 && $h > 0 && ($w < 24 || $h < 24)) {
+                $smallTargetTotal++;
+                if (count($smallTargetExamples) < 5) {
+                    $smallTargetExamples[] = strtolower($node->nodeName) . ' ' . (int) round($w) . 'x' . (int) round($h);
+                }
+            }
+        }
+    }
+
+    // Autocomplete on personal info fields (SC 1.3.5 / RGAA 11.13).
+    $personalInputTotal = 0;
+    $personalInputMissingAutocomplete = 0;
+    $personalNamePattern = '/(email|courriel|name|nom|prenom|first.?name|last.?name|family.?name|phone|tel|telephone|address|adresse|street|street.?address|postal|zip|cp|city|ville|country|pays|birthday|birthdate|date.?of.?birth|cc-|credit.?card|card.?number|cvc|cvv)/i';
+    $personalNodes = $xpath->query('//input[not(translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="hidden") and not(translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="submit") and not(translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="button") and not(translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="reset") and not(translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="checkbox") and not(translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="radio")]');
+    if ($personalNodes instanceof DOMNodeList) {
+        foreach ($personalNodes as $node) {
+            if (!($node instanceof DOMElement)) {
+                continue;
+            }
+            $type = strtolower(trim((string) $node->getAttribute('type')));
+            $name = trim((string) $node->getAttribute('name'));
+            $id = trim((string) $node->getAttribute('id'));
+            $autoc = trim((string) $node->getAttribute('autocomplete'));
+            $haystack = $type . ' ' . $name . ' ' . $id;
+
+            $isPersonal = ($type === 'email' || $type === 'tel' || preg_match($personalNamePattern, $haystack));
+            if (!$isPersonal) {
+                continue;
+            }
+            $personalInputTotal++;
+            if ($autoc === '' || strtolower($autoc) === 'off') {
+                $personalInputMissingAutocomplete++;
+            }
+        }
+    }
+
+    // Captcha widget detection (SC 3.3.8 / accessible authentication).
+    $hasCaptchaWidget = false;
+    $captchaKinds = [];
+    $htmlLowerSnippet = strtolower($html);
+    if (str_contains($htmlLowerSnippet, 'g-recaptcha') || str_contains($htmlLowerSnippet, 'recaptcha/api') || str_contains($htmlLowerSnippet, 'google.com/recaptcha')) {
+        $hasCaptchaWidget = true;
+        $captchaKinds[] = 'recaptcha';
+    }
+    if (str_contains($htmlLowerSnippet, 'h-captcha') || str_contains($htmlLowerSnippet, 'hcaptcha.com')) {
+        $hasCaptchaWidget = true;
+        $captchaKinds[] = 'hcaptcha';
+    }
+    if (str_contains($htmlLowerSnippet, 'cf-turnstile') || str_contains($htmlLowerSnippet, 'challenges.cloudflare.com/turnstile')) {
+        $hasCaptchaWidget = true;
+        $captchaKinds[] = 'turnstile';
+    }
+    if (str_contains($htmlLowerSnippet, 'friendlycaptcha')) {
+        $hasCaptchaWidget = true;
+        $captchaKinds[] = 'friendlycaptcha';
+    }
+
+    // Drag-and-drop (SC 2.5.7).
+    $draggableTotal = 0;
+    $draggableNodes = $xpath->query('//*[@draggable="true"]');
+    if ($draggableNodes instanceof DOMNodeList) {
+        $draggableTotal = $draggableNodes->length;
+    }
+
+    // Modern input types (HTML5 semantic inputs improve mobile keyboards / a11y).
+    $inputsTextShouldBeTypedTotal = 0;
+    $inputsTextShouldBeTypedExamples = [];
+    $textInputs = $xpath->query('//input[not(@type) or translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="text"]');
+    if ($textInputs instanceof DOMNodeList) {
+        foreach ($textInputs as $node) {
+            if (!($node instanceof DOMElement)) {
+                continue;
+            }
+            $name = strtolower(trim((string) $node->getAttribute('name')));
+            $id = strtolower(trim((string) $node->getAttribute('id')));
+            $hint = $name . ' ' . $id;
+            $expected = '';
+            if (preg_match('/email|courriel|mail/i', $hint)) {
+                $expected = 'email';
+            } elseif (preg_match('/phone|tel(?!ler)|mobile|telephone/i', $hint)) {
+                $expected = 'tel';
+            } elseif (preg_match('/url|website|site_web/i', $hint)) {
+                $expected = 'url';
+            } elseif (preg_match('/birth|date.?(de.?)?naiss|date_of_birth|dob/i', $hint)) {
+                $expected = 'date';
+            } elseif (preg_match('/(?:^|_)number|montant|amount|quantity|qty/i', $hint)) {
+                $expected = 'number';
+            }
+            if ($expected !== '') {
+                $inputsTextShouldBeTypedTotal++;
+                if (count($inputsTextShouldBeTypedExamples) < 5) {
+                    $inputsTextShouldBeTypedExamples[] = ($name !== '' ? $name : ($id !== '' ? '#' . $id : 'input')) . ' -> ' . $expected;
+                }
+            }
+        }
+    }
+
+    // Landmark structure completeness (WCAG 1.3.1 / RGAA 9.1).
+    $hasHeaderLandmark = false;
+    $hasNavLandmark = false;
+    $hasFooterLandmark = false;
+    if ($xpath->query('//header | //*[@role="banner"]')->length > 0) {
+        $hasHeaderLandmark = true;
+    }
+    if ($xpath->query('//nav | //*[@role="navigation"]')->length > 0) {
+        $hasNavLandmark = true;
+    }
+    if ($xpath->query('//footer | //*[@role="contentinfo"]')->length > 0) {
+        $hasFooterLandmark = true;
+    }
+
+    // Video captions (WCAG 1.2.2).
+    $videoTotal = 0;
+    $videoMissingCaptions = 0;
+    $videoNodes = $xpath->query('//video');
+    if ($videoNodes instanceof DOMNodeList) {
+        $videoTotal = $videoNodes->length;
+        foreach ($videoNodes as $video) {
+            if (!($video instanceof DOMElement)) {
+                continue;
+            }
+            $hasCaptions = false;
+            $tracks = $video->getElementsByTagName('track');
+            foreach ($tracks as $track) {
+                if (!($track instanceof DOMElement)) {
+                    continue;
+                }
+                $kind = strtolower(trim((string) $track->getAttribute('kind')));
+                if (in_array($kind, ['captions', 'subtitles'], true)) {
+                    $hasCaptions = true;
+                    break;
+                }
+            }
+            if (!$hasCaptions) {
+                $videoMissingCaptions++;
+            }
+        }
+    }
+
+    // Heading hierarchy (RGAA 9.1 / WCAG 1.3.1).
+    $headingSkipLevels = 0;
+    $h1Count = 0;
+    $headingNodes = $xpath->query('//h1|//h2|//h3|//h4|//h5|//h6');
+    if ($headingNodes instanceof DOMNodeList) {
+        $previousLevel = 0;
+        foreach ($headingNodes as $node) {
+            if (!($node instanceof DOMElement)) {
+                continue;
+            }
+            $level = (int) substr(strtolower($node->nodeName), 1);
+            if ($level === 1) {
+                $h1Count++;
+            }
+            if ($previousLevel > 0 && $level > $previousLevel + 1) {
+                $headingSkipLevels++;
+            }
+            $previousLevel = $level;
+        }
+    }
+
+    // Tables (RGAA 5.1, 5.4, 5.6, 5.7) — caption + th present.
+    $tablesTotal = 0;
+    $tablesMissingCaption = 0;
+    $tablesMissingTh = 0;
+    $tableNodes = $xpath->query('//table');
+    if ($tableNodes instanceof DOMNodeList) {
+        foreach ($tableNodes as $table) {
+            if (!($table instanceof DOMElement)) {
+                continue;
+            }
+            // Skip layout tables (role="presentation" / "none").
+            $role = strtolower(trim((string) $table->getAttribute('role')));
+            if (in_array($role, ['presentation', 'none'], true)) {
+                continue;
+            }
+            $tablesTotal++;
+            $hasCaption = $table->getElementsByTagName('caption')->length > 0;
+            $hasTh = $table->getElementsByTagName('th')->length > 0;
+            if (!$hasCaption) {
+                $tablesMissingCaption++;
+            }
+            if (!$hasTh) {
+                $tablesMissingTh++;
+            }
+        }
+    }
+
+    // Fieldset/legend on grouped inputs (RGAA 11.5).
+    $fieldsetGroupedInputsTotal = 0;
+    $fieldsetMissingLegend = 0;
+    $radioCheckboxNodes = $xpath->query('//input[translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="radio" or translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="checkbox"]');
+    $groupNames = [];
+    if ($radioCheckboxNodes instanceof DOMNodeList) {
+        foreach ($radioCheckboxNodes as $node) {
+            if (!($node instanceof DOMElement)) {
+                continue;
+            }
+            $name = trim((string) $node->getAttribute('name'));
+            if ($name === '') {
+                continue;
+            }
+            $groupNames[$name] = ($groupNames[$name] ?? 0) + 1;
+        }
+    }
+    foreach ($groupNames as $name => $count) {
+        if ($count < 2) {
+            continue;
+        }
+        $fieldsetGroupedInputsTotal++;
+        $matchedInsideFieldset = false;
+        $controls = $xpath->query('//input[(translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="radio" or translate(@type,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="checkbox") and @name=' . a11y_xpath_literal($name) . ']');
+        if ($controls instanceof DOMNodeList) {
+            foreach ($controls as $ctrl) {
+                if (!($ctrl instanceof DOMElement)) {
+                    continue;
+                }
+                $parent = $ctrl->parentNode;
+                while ($parent instanceof DOMElement) {
+                    if (strtolower($parent->nodeName) === 'fieldset') {
+                        $matchedInsideFieldset = $parent->getElementsByTagName('legend')->length > 0;
+                        break 2;
+                    }
+                    $parent = $parent->parentNode;
+                }
+            }
+        }
+        if (!$matchedInsideFieldset) {
+            $fieldsetMissingLegend++;
+        }
+    }
+
+    // Autoplay media (WCAG 1.4.2 / RGAA 4.7).
+    $autoplayMediaTotal = $xpath->query('//video[@autoplay]|//audio[@autoplay]')->length;
+
+    // Inline lang changes (RGAA 8.7) — count <span lang> / [lang] inside body excluding html itself.
+    $langChangesInlineTotal = $xpath->query('//body//*[@lang and not(self::html)]')->length;
+
+    // Audio with transcript heuristic (WCAG 1.2.1).
+    $audioTotal = 0;
+    $audioMissingTranscriptHint = 0;
+    $audioNodes = $xpath->query('//audio');
+    if ($audioNodes instanceof DOMNodeList) {
+        $audioTotal = $audioNodes->length;
+        $pageTextLower = strtolower((string) preg_replace('/\s+/u', ' ', strip_tags($html)));
+        $hasTranscriptHint = (
+            str_contains($pageTextLower, 'transcript')
+            || str_contains($pageTextLower, 'transcription')
+            || str_contains($pageTextLower, 'verbatim')
+        );
+        $audioMissingTranscriptHint = $hasTranscriptHint ? 0 : $audioTotal;
+    }
+
+    // Consistent help (SC 3.2.6) — at minimum, surface a help/contact affordance.
+    $hasHelpLink = false;
+    if ($linkNodes instanceof DOMNodeList) {
+        foreach ($linkNodes as $link) {
+            if (!($link instanceof DOMElement)) {
+                continue;
+            }
+            $hrefLow = a11y_to_lower((string) $link->getAttribute('href'));
+            $textLow = a11y_to_lower((string) $link->textContent);
+            $combined = $hrefLow . ' ' . $textLow;
+            if (
+                str_contains($combined, 'contact')
+                || str_contains($combined, '/aide')
+                || str_contains($combined, '/help')
+                || str_contains($combined, '/support')
+                || str_contains($combined, '/faq')
+                || preg_match('/\b(aide|help|support|nous contacter|contactez)\b/u', $combined)
+            ) {
+                $hasHelpLink = true;
+                break;
+            }
+        }
+    }
+
     return [
         'html_lang' => $htmlLang,
         'title' => $title,
@@ -609,10 +1021,41 @@ function a11y_parse_html_signals(string $html, string $finalUrl): array
         'has_multiyear_schema' => $hasMultiyearSchema,
         'has_action_plan' => $hasActionPlan,
         'has_status_mention' => $hasStatusMention,
+        'focus_outline_killed' => $focusOutlineKilled,
+        'focus_visible_override' => $focusVisibleOverride,
+        'small_target_total' => $smallTargetTotal,
+        'small_target_examples' => $smallTargetExamples,
+        'personal_input_total' => $personalInputTotal,
+        'personal_input_missing_autocomplete' => $personalInputMissingAutocomplete,
+        'has_captcha_widget' => $hasCaptchaWidget,
+        'captcha_kinds' => array_values(array_unique($captchaKinds)),
+        'draggable_total' => $draggableTotal,
+        'has_help_link' => $hasHelpLink,
+        'inputs_text_should_be_typed_total' => $inputsTextShouldBeTypedTotal,
+        'inputs_text_should_be_typed_examples' => $inputsTextShouldBeTypedExamples,
+        'has_header_landmark' => $hasHeaderLandmark,
+        'has_nav_landmark' => $hasNavLandmark,
+        'has_footer_landmark' => $hasFooterLandmark,
+        'video_total' => $videoTotal,
+        'video_missing_captions' => $videoMissingCaptions,
+        'audio_total' => $audioTotal,
+        'audio_missing_transcript_hint' => $audioMissingTranscriptHint,
+        'autoplay_media_total' => $autoplayMediaTotal,
+        'doctype_html5' => $doctypeHtml5,
+        'charset_declared' => $charsetDeclared,
+        'viewport_blocks_zoom' => $viewportBlocksZoom,
+        'heading_skip_levels' => $headingSkipLevels,
+        'h1_count' => $h1Count,
+        'tables_total' => $tablesTotal,
+        'tables_missing_caption' => $tablesMissingCaption,
+        'tables_missing_th' => $tablesMissingTh,
+        'fieldset_grouped_inputs_total' => $fieldsetGroupedInputsTotal,
+        'fieldset_missing_legend' => $fieldsetMissingLegend,
+        'lang_changes_inline_total' => $langChangesInlineTotal,
     ];
 }
 
-function a11y_add_check(array &$checks, string $key, string $status, string $value): void
+function a11y_add_check(array &$checks, string $key, string $status, string $value, bool $rgaa5Only = false): void
 {
     $safe = strtolower(trim($status));
     if (!in_array($safe, ['pass', 'warn', 'fail'], true)) {
@@ -622,6 +1065,7 @@ function a11y_add_check(array &$checks, string $key, string $status, string $val
         'key' => $key,
         'status' => $safe,
         'value' => $value,
+        'rgaa5_only' => $rgaa5Only,
     ];
 }
 
@@ -660,6 +1104,39 @@ $hasAccessibilityStatement = (bool) ($signals['has_accessibility_statement'] ?? 
 $hasMultiyearSchema = (bool) ($signals['has_multiyear_schema'] ?? false);
 $hasActionPlan = (bool) ($signals['has_action_plan'] ?? false);
 $hasStatusMention = (bool) ($signals['has_status_mention'] ?? false);
+
+// RGAA 5 / WCAG 2.2 signals
+$focusOutlineKilled = (bool) ($signals['focus_outline_killed'] ?? false);
+$focusVisibleOverride = (bool) ($signals['focus_visible_override'] ?? false);
+$smallTargetTotal = (int) ($signals['small_target_total'] ?? 0);
+$smallTargetExamples = is_array($signals['small_target_examples'] ?? null) ? $signals['small_target_examples'] : [];
+$personalInputTotal = (int) ($signals['personal_input_total'] ?? 0);
+$personalInputMissingAutocomplete = (int) ($signals['personal_input_missing_autocomplete'] ?? 0);
+$hasCaptchaWidget = (bool) ($signals['has_captcha_widget'] ?? false);
+$captchaKinds = is_array($signals['captcha_kinds'] ?? null) ? $signals['captcha_kinds'] : [];
+$draggableTotal = (int) ($signals['draggable_total'] ?? 0);
+$hasHelpLink = (bool) ($signals['has_help_link'] ?? false);
+$inputsTextShouldBeTypedTotal = (int) ($signals['inputs_text_should_be_typed_total'] ?? 0);
+$inputsTextShouldBeTypedExamples = is_array($signals['inputs_text_should_be_typed_examples'] ?? null) ? $signals['inputs_text_should_be_typed_examples'] : [];
+$hasHeaderLandmark = (bool) ($signals['has_header_landmark'] ?? false);
+$hasNavLandmark = (bool) ($signals['has_nav_landmark'] ?? false);
+$hasFooterLandmark = (bool) ($signals['has_footer_landmark'] ?? false);
+$videoTotal = (int) ($signals['video_total'] ?? 0);
+$videoMissingCaptions = (int) ($signals['video_missing_captions'] ?? 0);
+$audioTotal = (int) ($signals['audio_total'] ?? 0);
+$audioMissingTranscriptHint = (int) ($signals['audio_missing_transcript_hint'] ?? 0);
+$autoplayMediaTotal = (int) ($signals['autoplay_media_total'] ?? 0);
+$doctypeHtml5 = (bool) ($signals['doctype_html5'] ?? false);
+$charsetDeclared = (bool) ($signals['charset_declared'] ?? false);
+$viewportBlocksZoom = (bool) ($signals['viewport_blocks_zoom'] ?? false);
+$headingSkipLevels = (int) ($signals['heading_skip_levels'] ?? 0);
+$h1Count = (int) ($signals['h1_count'] ?? 0);
+$tablesTotal = (int) ($signals['tables_total'] ?? 0);
+$tablesMissingCaption = (int) ($signals['tables_missing_caption'] ?? 0);
+$tablesMissingTh = (int) ($signals['tables_missing_th'] ?? 0);
+$fieldsetGroupedInputsTotal = (int) ($signals['fieldset_grouped_inputs_total'] ?? 0);
+$fieldsetMissingLegend = (int) ($signals['fieldset_missing_legend'] ?? 0);
+$langChangesInlineTotal = (int) ($signals['lang_changes_inline_total'] ?? 0);
 
 $checks = [];
 a11y_add_check($checks, 'a11y_http_status_2xx', $is2xx ? 'pass' : 'fail', (string) $statusCode);
@@ -714,6 +1191,145 @@ a11y_add_check($checks, 'a11y_accessibility_multiyear', $hasMultiyearSchema ? 'p
 a11y_add_check($checks, 'a11y_accessibility_plan', $hasActionPlan ? 'pass' : 'warn', $hasActionPlan ? 'yes' : 'no');
 a11y_add_check($checks, 'a11y_accessibility_status_mention', $hasStatusMention ? 'pass' : 'warn', $hasStatusMention ? 'yes' : 'no');
 
+// ---- Common RGAA 4 + 5 structural checks (always run) ----
+
+// RGAA 8.1 — Doctype HTML5
+a11y_add_check($checks, 'a11y_doctype_html5', $doctypeHtml5 ? 'pass' : 'warn', $doctypeHtml5 ? '<!doctype html>' : 'manquant');
+
+// RGAA 8.5 — Charset declared
+a11y_add_check($checks, 'a11y_charset_declared', $charsetDeclared ? 'pass' : 'warn', $charsetDeclared ? 'meta charset detecte' : 'absent');
+
+// RGAA 13.8 / WCAG 1.4.4 — viewport must not block zoom
+if ($viewportBlocksZoom) {
+    a11y_add_check($checks, 'a11y_viewport_zoom_allowed', 'fail', 'user-scalable=no / maximum-scale<=1');
+} else {
+    a11y_add_check($checks, 'a11y_viewport_zoom_allowed', 'pass', 'zoom autorise');
+}
+
+// RGAA 9.1 / WCAG 1.3.1 — heading hierarchy + single H1
+if ($h1Count === 0) {
+    a11y_add_check($checks, 'a11y_heading_hierarchy', 'fail', 'aucun H1');
+} elseif ($h1Count > 1) {
+    a11y_add_check($checks, 'a11y_heading_hierarchy', 'warn', $h1Count . ' H1');
+} elseif ($headingSkipLevels > 0) {
+    a11y_add_check($checks, 'a11y_heading_hierarchy', 'warn', $headingSkipLevels . ' saut(s) de niveau');
+} else {
+    a11y_add_check($checks, 'a11y_heading_hierarchy', 'pass', '1 H1, hierarchie continue');
+}
+
+// RGAA 5 (Tableaux) — caption + th
+if ($tablesTotal === 0) {
+    a11y_add_check($checks, 'a11y_tables_accessible', 'pass', '0 tableau de donnees');
+} else {
+    $issues = [];
+    if ($tablesMissingCaption > 0) $issues[] = $tablesMissingCaption . ' sans caption';
+    if ($tablesMissingTh > 0) $issues[] = $tablesMissingTh . ' sans th';
+    if (count($issues) === 0) {
+        a11y_add_check($checks, 'a11y_tables_accessible', 'pass', $tablesTotal . ' tableau(x) ok');
+    } else {
+        $status = $tablesMissingTh > 0 ? 'fail' : 'warn';
+        a11y_add_check($checks, 'a11y_tables_accessible', $status, implode(', ', $issues) . ' / ' . $tablesTotal);
+    }
+}
+
+// RGAA 11.5 — fieldset/legend on grouped inputs
+if ($fieldsetGroupedInputsTotal === 0) {
+    a11y_add_check($checks, 'a11y_fieldset_legend', 'pass', 'aucun groupe radio/checkbox');
+} else {
+    $status = $fieldsetMissingLegend === 0 ? 'pass' : ($fieldsetMissingLegend === $fieldsetGroupedInputsTotal ? 'fail' : 'warn');
+    a11y_add_check($checks, 'a11y_fieldset_legend', $status, $fieldsetMissingLegend . '/' . $fieldsetGroupedInputsTotal . ' groupe(s) sans fieldset+legend');
+}
+
+// RGAA 4.7 / WCAG 1.4.2 — autoplay media
+a11y_add_check($checks, 'a11y_no_autoplay_media', $autoplayMediaTotal === 0 ? 'pass' : 'fail', $autoplayMediaTotal === 0 ? 'aucun' : $autoplayMediaTotal . ' element(s) autoplay');
+
+// ---- RGAA 5 / WCAG 2.2 specific checks (only run when standard = rgaa5) ----
+if ($referenceStandard === 'rgaa5') {
+    // SC 2.4.13 — Focus appearance
+    if ($focusOutlineKilled && !$focusVisibleOverride) {
+        a11y_add_check($checks, 'a11y_rgaa5_focus_visible', 'fail', 'outline:none sans :focus-visible', true);
+    } elseif ($focusOutlineKilled && $focusVisibleOverride) {
+        a11y_add_check($checks, 'a11y_rgaa5_focus_visible', 'warn', 'outline retire mais :focus-visible present', true);
+    } else {
+        a11y_add_check($checks, 'a11y_rgaa5_focus_visible', 'pass', 'outline preserve', true);
+    }
+
+    // SC 2.5.8 — Target size minimum (24x24)
+    if ($smallTargetTotal === 0) {
+        a11y_add_check($checks, 'a11y_rgaa5_target_size', 'pass', '0', true);
+    } else {
+        $sample = count($smallTargetExamples) > 0 ? ' (' . implode(', ', $smallTargetExamples) . ')' : '';
+        $status = $smallTargetTotal >= 5 ? 'fail' : 'warn';
+        a11y_add_check($checks, 'a11y_rgaa5_target_size', $status, $smallTargetTotal . $sample, true);
+    }
+
+    // SC 1.3.5 — Autocomplete on personal info fields
+    if ($personalInputTotal === 0) {
+        a11y_add_check($checks, 'a11y_rgaa5_autocomplete_personal', 'pass', '0/0', true);
+    } else {
+        $ratio = $personalInputMissingAutocomplete / max(1, $personalInputTotal);
+        $status = $personalInputMissingAutocomplete === 0 ? 'pass' : ($ratio <= 0.5 ? 'warn' : 'fail');
+        a11y_add_check($checks, 'a11y_rgaa5_autocomplete_personal', $status, $personalInputMissingAutocomplete . '/' . $personalInputTotal, true);
+    }
+
+    // SC 3.3.8 — Accessible authentication (no cognitive captcha without alternative)
+    if (!$hasCaptchaWidget) {
+        a11y_add_check($checks, 'a11y_rgaa5_captcha_alternative', 'pass', 'aucun captcha detecte', true);
+    } else {
+        $kinds = count($captchaKinds) > 0 ? implode(', ', $captchaKinds) : 'detecte';
+        a11y_add_check($checks, 'a11y_rgaa5_captcha_alternative', 'warn', $kinds . ' (verif manuelle requise)', true);
+    }
+
+    // SC 2.5.7 — Drag-and-drop alternative
+    if ($draggableTotal === 0) {
+        a11y_add_check($checks, 'a11y_rgaa5_drag_alternative', 'pass', '0', true);
+    } else {
+        a11y_add_check($checks, 'a11y_rgaa5_drag_alternative', 'warn', (string) $draggableTotal . ' element(s) draggable', true);
+    }
+
+    // SC 3.2.6 — Consistent help (presence on the page)
+    a11y_add_check($checks, 'a11y_rgaa5_consistent_help', $hasHelpLink ? 'pass' : 'warn', $hasHelpLink ? 'yes' : 'no', true);
+
+    // Modern input types — type=email/tel/url/date/number for personal/contact fields.
+    if ($inputsTextShouldBeTypedTotal === 0) {
+        a11y_add_check($checks, 'a11y_rgaa5_modern_input_types', 'pass', '0', true);
+    } else {
+        $sample = count($inputsTextShouldBeTypedExamples) > 0 ? ' (' . implode(', ', $inputsTextShouldBeTypedExamples) . ')' : '';
+        $status = $inputsTextShouldBeTypedTotal >= 3 ? 'fail' : 'warn';
+        a11y_add_check($checks, 'a11y_rgaa5_modern_input_types', $status, $inputsTextShouldBeTypedTotal . $sample, true);
+    }
+
+    // Landmarks completeness — header / nav / main / footer present.
+    $landmarksPresent = (int) $hasHeaderLandmark + (int) $hasNavLandmark + (int) $mainLandmark + (int) $hasFooterLandmark;
+    if ($landmarksPresent === 4) {
+        a11y_add_check($checks, 'a11y_rgaa5_landmarks_complete', 'pass', '4/4 (header, nav, main, footer)', true);
+    } else {
+        $missingPieces = [];
+        if (!$hasHeaderLandmark) $missingPieces[] = 'header';
+        if (!$hasNavLandmark) $missingPieces[] = 'nav';
+        if (!$mainLandmark) $missingPieces[] = 'main';
+        if (!$hasFooterLandmark) $missingPieces[] = 'footer';
+        $status = $landmarksPresent <= 2 ? 'fail' : 'warn';
+        a11y_add_check($checks, 'a11y_rgaa5_landmarks_complete', $status, $landmarksPresent . '/4 (manque: ' . implode(', ', $missingPieces) . ')', true);
+    }
+
+    // Video captions track (WCAG 1.2.2).
+    if ($videoTotal === 0) {
+        a11y_add_check($checks, 'a11y_rgaa5_video_captions', 'pass', '0 video', true);
+    } else {
+        $status = $videoMissingCaptions === 0 ? 'pass' : 'fail';
+        a11y_add_check($checks, 'a11y_rgaa5_video_captions', $status, $videoMissingCaptions . '/' . $videoTotal . ' sans captions', true);
+    }
+
+    // Audio transcript hint (WCAG 1.2.1).
+    if ($audioTotal === 0) {
+        a11y_add_check($checks, 'a11y_rgaa5_audio_transcript', 'pass', '0 audio', true);
+    } else {
+        $status = $audioMissingTranscriptHint === 0 ? 'pass' : 'warn';
+        a11y_add_check($checks, 'a11y_rgaa5_audio_transcript', $status, $audioMissingTranscriptHint . '/' . $audioTotal . ' sans mention de transcription', true);
+    }
+}
+
 $weights = [
     'a11y_http_status_2xx' => 10,
     'a11y_html_lang_present' => 8,
@@ -731,6 +1347,25 @@ $weights = [
     'a11y_accessibility_multiyear' => 2,
     'a11y_accessibility_plan' => 2,
     'a11y_accessibility_status_mention' => 3,
+    // Common RGAA 4 + 5 structural
+    'a11y_doctype_html5' => 2,
+    'a11y_charset_declared' => 3,
+    'a11y_viewport_zoom_allowed' => 6,
+    'a11y_heading_hierarchy' => 8,
+    'a11y_tables_accessible' => 6,
+    'a11y_fieldset_legend' => 5,
+    'a11y_no_autoplay_media' => 6,
+    // RGAA 5 / WCAG 2.2
+    'a11y_rgaa5_focus_visible' => 8,
+    'a11y_rgaa5_target_size' => 7,
+    'a11y_rgaa5_autocomplete_personal' => 5,
+    'a11y_rgaa5_captcha_alternative' => 6,
+    'a11y_rgaa5_drag_alternative' => 3,
+    'a11y_rgaa5_consistent_help' => 3,
+    'a11y_rgaa5_modern_input_types' => 5,
+    'a11y_rgaa5_landmarks_complete' => 6,
+    'a11y_rgaa5_video_captions' => 7,
+    'a11y_rgaa5_audio_transcript' => 4,
 ];
 $factor = ['pass' => 1.0, 'warn' => 0.5, 'fail' => 0.0];
 
@@ -803,6 +1438,63 @@ if (!$hasStatusMention) {
     $pushReco($recommendations, 'a11y_reco_add_status_mention');
 }
 
+// Common RGAA 4 + 5 recommendations
+if (!$doctypeHtml5) {
+    $pushReco($recommendations, 'a11y_reco_add_doctype_html5');
+}
+if (!$charsetDeclared) {
+    $pushReco($recommendations, 'a11y_reco_declare_charset');
+}
+if ($viewportBlocksZoom) {
+    $pushReco($recommendations, 'a11y_reco_allow_zoom');
+}
+if ($h1Count === 0 || $h1Count > 1 || $headingSkipLevels > 0) {
+    $pushReco($recommendations, 'a11y_reco_fix_heading_hierarchy');
+}
+if ($tablesTotal > 0 && ($tablesMissingCaption > 0 || $tablesMissingTh > 0)) {
+    $pushReco($recommendations, 'a11y_reco_fix_tables');
+}
+if ($fieldsetGroupedInputsTotal > 0 && $fieldsetMissingLegend > 0) {
+    $pushReco($recommendations, 'a11y_reco_add_fieldset_legend');
+}
+if ($autoplayMediaTotal > 0) {
+    $pushReco($recommendations, 'a11y_reco_remove_autoplay');
+}
+
+// RGAA 5-only recommendations
+if ($referenceStandard === 'rgaa5') {
+    if ($focusOutlineKilled && !$focusVisibleOverride) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_restore_focus_visible');
+    }
+    if ($smallTargetTotal > 0) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_enlarge_targets');
+    }
+    if ($personalInputTotal > 0 && $personalInputMissingAutocomplete > 0) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_add_autocomplete');
+    }
+    if ($hasCaptchaWidget) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_offer_captcha_alternative');
+    }
+    if ($draggableTotal > 0) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_drag_alternative');
+    }
+    if (!$hasHelpLink) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_consistent_help');
+    }
+    if ($inputsTextShouldBeTypedTotal > 0) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_modern_input_types');
+    }
+    if (!$hasHeaderLandmark || !$hasNavLandmark || !$mainLandmark || !$hasFooterLandmark) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_complete_landmarks');
+    }
+    if ($videoTotal > 0 && $videoMissingCaptions > 0) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_add_video_captions');
+    }
+    if ($audioTotal > 0 && $audioMissingTranscriptHint > 0) {
+        $pushReco($recommendations, 'a11y_reco_rgaa5_add_audio_transcript');
+    }
+}
+
 $checklistPriority = [
     'a11y_reco_fix_http_status' => 'high',
     'a11y_reco_add_lang' => 'high',
@@ -819,6 +1511,24 @@ $checklistPriority = [
     'a11y_reco_publish_multiyear' => 'low',
     'a11y_reco_publish_plan' => 'low',
     'a11y_reco_add_status_mention' => 'low',
+    'a11y_reco_add_doctype_html5' => 'low',
+    'a11y_reco_declare_charset' => 'low',
+    'a11y_reco_allow_zoom' => 'high',
+    'a11y_reco_fix_heading_hierarchy' => 'high',
+    'a11y_reco_fix_tables' => 'medium',
+    'a11y_reco_add_fieldset_legend' => 'medium',
+    'a11y_reco_remove_autoplay' => 'high',
+    // RGAA 5
+    'a11y_reco_rgaa5_restore_focus_visible' => 'high',
+    'a11y_reco_rgaa5_add_autocomplete' => 'high',
+    'a11y_reco_rgaa5_offer_captcha_alternative' => 'high',
+    'a11y_reco_rgaa5_enlarge_targets' => 'medium',
+    'a11y_reco_rgaa5_drag_alternative' => 'medium',
+    'a11y_reco_rgaa5_consistent_help' => 'low',
+    'a11y_reco_rgaa5_modern_input_types' => 'medium',
+    'a11y_reco_rgaa5_complete_landmarks' => 'medium',
+    'a11y_reco_rgaa5_add_video_captions' => 'high',
+    'a11y_reco_rgaa5_add_audio_transcript' => 'medium',
 ];
 $checklist = ['high' => [], 'medium' => [], 'low' => []];
 foreach ($recommendations as $recoKey) {
@@ -867,6 +1577,25 @@ respond_json([
             'has_action_plan' => $hasActionPlan,
             'has_status_mention' => $hasStatusMention,
             'accessibility_signals' => $accessibilitySignals,
+            'rgaa5_focus_outline_killed' => $focusOutlineKilled,
+            'rgaa5_focus_visible_override' => $focusVisibleOverride,
+            'rgaa5_small_target_total' => $smallTargetTotal,
+            'rgaa5_small_target_examples' => $smallTargetExamples,
+            'rgaa5_personal_input_total' => $personalInputTotal,
+            'rgaa5_personal_input_missing_autocomplete' => $personalInputMissingAutocomplete,
+            'rgaa5_has_captcha_widget' => $hasCaptchaWidget,
+            'rgaa5_captcha_kinds' => $captchaKinds,
+            'rgaa5_draggable_total' => $draggableTotal,
+            'rgaa5_has_help_link' => $hasHelpLink,
+            'rgaa5_inputs_text_should_be_typed_total' => $inputsTextShouldBeTypedTotal,
+            'rgaa5_inputs_text_should_be_typed_examples' => $inputsTextShouldBeTypedExamples,
+            'rgaa5_has_header_landmark' => $hasHeaderLandmark,
+            'rgaa5_has_nav_landmark' => $hasNavLandmark,
+            'rgaa5_has_footer_landmark' => $hasFooterLandmark,
+            'rgaa5_video_total' => $videoTotal,
+            'rgaa5_video_missing_captions' => $videoMissingCaptions,
+            'rgaa5_audio_total' => $audioTotal,
+            'rgaa5_audio_missing_transcript_hint' => $audioMissingTranscriptHint,
         ],
         'recommendations' => $recommendations,
         'checklist' => $checklist,

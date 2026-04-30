@@ -33,7 +33,7 @@ function renderAuditKpis(container, entries) {
 
 function renderAuditChecksTable(container, checks, opts) {
   if (!container) return;
-  const { prefix, localizeLabel, emptyKey, titleKey } = opts;
+  const { prefix, localizeLabel, emptyKey, titleKey, decorateLabel, beforeTable } = opts;
   if (!checks.length) {
     container.innerHTML = `<div class="mesh-actions-empty">${escapeHtml(t(emptyKey))}</div>`;
     return;
@@ -43,16 +43,19 @@ function renderAuditChecksTable(container, checks, opts) {
     const value = String(check.value || '-');
     const label = localizeLabel(check.key);
     const statusLabel = localizeAuditStatus(status, prefix);
+    const extra = typeof decorateLabel === 'function' ? (decorateLabel(check) || '') : '';
     return `
       <tr>
-        <td>${escapeHtml(label)}</td>
+        <td>${escapeHtml(label)}${extra}</td>
         <td><span class="tech-check-badge ${escapeHtml(status)}">${escapeHtml(statusLabel)}</span></td>
         <td>${escapeHtml(value)}</td>
       </tr>
     `;
   }).join('');
+  const beforeHtml = typeof beforeTable === 'string' ? beforeTable : '';
   container.innerHTML = `
     <div class="tech-checks-head">${escapeHtml(t(titleKey))}</div>
+    ${beforeHtml}
     <div class="tech-checks-table-wrap">
       <table class="tech-checks-table">
         <thead>
