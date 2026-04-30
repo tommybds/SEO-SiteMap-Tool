@@ -1,8 +1,22 @@
 // App version + changelog modal.
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 const CHANGELOG_ENTRIES = [
+  {
+    version: '1.4.0',
+    date: '2026-04-30',
+    fr: [
+      'Audits page (tech, GEO, sécurité, accessibilité, images, redirections): l’URL scannée est désormais portée dans la querystring (`?url=…`) à chaque lancement, et le champ se pré-remplit automatiquement quand on arrive avec ce paramètre.',
+      'Audit accessibilité: le référentiel choisi (RGAA 4.1.2 ou RGAA 5) est aussi sérialisé dans `?std=…`.',
+      'Conséquence: les liens d’audit sont désormais bookmarkables et partageables. L’ouverture d’un lien partagé pré-remplit le formulaire mais ne lance pas le scan automatiquement (privilège du destinataire).',
+    ],
+    en: [
+      'Page audits (tech, GEO, security, accessibility, images, redirects): the scanned URL is now carried in the querystring (`?url=…`) on each run, and the input field is automatically pre-filled when arriving with that parameter.',
+      'Accessibility audit: the selected standard (RGAA 4.1.2 or RGAA 5) is also serialized as `?std=…`.',
+      'Result: audit links are now bookmarkable and shareable. Opening a shared link pre-fills the form but does not auto-run the scan (recipient stays in control).',
+    ],
+  },
   {
     version: '1.3.0',
     date: '2026-04-30',

@@ -3,6 +3,14 @@
 Toutes les évolutions notables du projet sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.4.0] - 2026-04-30
+
+### Ajouté — Liens d'audit partageables
+- Tous les audits page (tech, GEO, sécurité, accessibilité, images, redirections) sérialisent l'URL scannée dans la querystring (`?url=…`) à chaque lancement.
+- L'audit accessibilité sérialise aussi le référentiel choisi (`?std=rgaa4` ou `?std=rgaa5`).
+- À l'ouverture d'un lien partagé, le champ se pré-remplit automatiquement et l'éventuel référentiel est appliqué — mais le scan n'est **pas** lancé automatiquement (le destinataire garde le contrôle).
+- Exemple : `https://tools.tommy-bordas.fr/?mode=accessibility&url=https://mairie.sumoto.fr/&std=rgaa5`
+
 ## [1.3.0] - 2026-04-30
 
 ### Modifié — Navigation
@@ -46,6 +54,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 
 # Changelog (English)
 
+## [1.4.0] - 2026-04-30
+
+### Added — Shareable audit links
+- All page audits (tech, GEO, security, accessibility, images, redirects) now serialize the scanned URL in the querystring (`?url=…`) on each run.
+- Accessibility audit also serializes the selected standard (`?std=rgaa4` or `?std=rgaa5`).
+- Opening a shared link auto-pre-fills the input field (and the standard, when applicable) but does **not** auto-run the scan (recipient stays in control).
+- Example: `https://tools.tommy-bordas.fr/?mode=accessibility&url=https://mairie.sumoto.fr/&std=rgaa5`
+
 ## [1.3.0] - 2026-04-30
 
 ### Changed — Navigation
@@ -85,6 +101,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 ### Added — UI
 - Version pill `v1.1.0` in the footer; clicking opens a bilingual (fr/en) changelog modal.
 
+[1.4.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.4.0
 [1.3.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.3.0
 [1.2.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.2.0
 [1.1.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.1.0

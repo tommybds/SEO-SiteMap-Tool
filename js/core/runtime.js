@@ -275,6 +275,34 @@ function t(key, vars = {}) {
       return 'tech';
     }
 
+    function syncAuditUrlParams(params) {
+      try {
+        const url = new URL(window.location.href);
+        Object.entries(params || {}).forEach(([key, value]) => {
+          if (value === null || typeof value === 'undefined' || String(value).trim() === '') {
+            url.searchParams.delete(key);
+          } else {
+            url.searchParams.set(key, String(value));
+          }
+        });
+        window.history.replaceState({}, '', url.toString());
+      } catch (_) { /* ignore URL sync failures (file://, etc.) */ }
+    }
+
+    function applyInitialAuditParams() {
+      const search = new URLSearchParams(window.location.search);
+      const sharedUrl = (search.get('url') || '').trim();
+      const std = (search.get('std') || '').trim().toLowerCase();
+      if (sharedUrl !== '') {
+        [techUrlInput, redirectUrlInput, geoUrlInput, securityUrlInput, accessibilityUrlInput, imagesUrlInput]
+          .filter((el) => !!el && !el.value)
+          .forEach((el) => { el.value = sharedUrl; });
+      }
+      if (std === 'rgaa4' || std === 'rgaa5') {
+        if (accessibilityStandardInput) accessibilityStandardInput.value = std;
+      }
+    }
+
     function setMeshRunningState(running) {
       meshRunBtn.disabled = running;
       meshRunBtn.textContent = running ? t('mesh_run_btn_running') : t('mesh_run_btn_idle');

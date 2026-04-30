@@ -137,6 +137,7 @@ form.addEventListener('submit', async (event) => {
         url: normalizeUrlInputValue(techUrlInput),
         timeout: Number(techTimeoutInput.value || 12),
       };
+      syncAuditUrlParams({ url: payload.url, std: null });
 
       try {
         const data = await runTechAudit(payload);
@@ -176,6 +177,7 @@ form.addEventListener('submit', async (event) => {
         url: normalizeUrlInputValue(redirectUrlInput),
         timeout: Number(redirectTimeoutInput.value || 12),
       };
+      syncAuditUrlParams({ url: payload.url, std: null });
 
       try {
         const data = await runRedirectAudit(payload);
@@ -215,6 +217,7 @@ form.addEventListener('submit', async (event) => {
         url: normalizeUrlInputValue(geoUrlInput),
         timeout: Number(geoTimeoutInput.value || 12),
       };
+      syncAuditUrlParams({ url: payload.url, std: null });
 
       try {
         const data = await runGeoAudit(payload);
@@ -251,6 +254,7 @@ form.addEventListener('submit', async (event) => {
         url: normalizeUrlInputValue(securityUrlInput),
         timeout: Number(securityTimeoutInput.value || 12),
       };
+      syncAuditUrlParams({ url: payload.url, std: null });
 
       try {
         const data = await runSecurityAudit(payload);
@@ -285,6 +289,7 @@ form.addEventListener('submit', async (event) => {
         url: normalizeUrlInputValue(imagesUrlInput),
         timeout: Number(imagesTimeoutInput.value || 12),
       };
+      syncAuditUrlParams({ url: payload.url, std: null });
 
       try {
         const data = await runImagesAudit(payload);
@@ -320,6 +325,7 @@ form.addEventListener('submit', async (event) => {
         standard: String(accessibilityStandardInput && accessibilityStandardInput.value ? accessibilityStandardInput.value : 'rgaa4'),
         timeout: Number(accessibilityTimeoutInput.value || 12),
       };
+      syncAuditUrlParams({ url: payload.url, std: payload.standard });
 
       try {
         const data = await runAccessibilityAudit(payload);
@@ -444,6 +450,7 @@ form.addEventListener('submit', async (event) => {
     langEnBtn.addEventListener('click', () => setLang('en'));
     setMode(detectInitialMode(), false);
     setLang(detectInitialLang(), false);
+    applyInitialAuditParams();
     applyMeshGraphVisibility();
     syncMeshUrlFromSitemap(normalizeUrlInputValue(sitemapInput));
 
