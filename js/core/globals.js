@@ -222,7 +222,7 @@
     var currentSort = { key: 'priority_score', direction: 'desc' };
     var latestStatusPayload = null;
     var currentLang = 'fr';
-    var currentMode = 'sitemap';
+    var currentMode = 'tech';
     var sitemapHasOutput = false;
     var latestMeshPayload = null;
     var latestTechPayload = null;

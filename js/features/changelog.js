@@ -1,8 +1,22 @@
 // App version + changelog modal.
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 const CHANGELOG_ENTRIES = [
+  {
+    version: '1.3.0',
+    date: '2026-04-30',
+    fr: [
+      'Navigation: « Audit page » devient la catégorie par défaut, « Audit site » passe en seconde position. L’écran d’ouverture présente maintenant l’audit SEO technique sur URL unique (le cas d’usage le plus fréquent).',
+      'Projet: première publication d’un fichier LICENSE (PolyForm Noncommercial 1.0.0) — usage personnel/recherche/éducation autorisé, usage commercial interdit.',
+      'README: badges (last commit, repo size, PHP, Python, license, version), sections obsolètes mises à jour, bloc License ajouté.',
+    ],
+    en: [
+      'Navigation: "Page audit" is now the default category, "Site audit" moves to second position. The landing screen now presents the single-URL technical SEO audit (the most common use case).',
+      'Project: first published LICENSE file (PolyForm Noncommercial 1.0.0) — personal, research, education use allowed, commercial use prohibited.',
+      'README: badges (last commit, repo size, PHP, Python, license, version), outdated sections refreshed, License section added.',
+    ],
+  },
   {
     version: '1.2.0',
     date: '2026-04-30',

@@ -42,18 +42,18 @@
       <p id="app-subtitle">Auditez sitemap, maillage interne, SEO technique, redirections, accessibilité et GEO depuis une interface unique.</p>
 
       <nav class="nav-category" role="tablist" aria-label="Catégorie d’audit">
-        <button type="button" id="cat-site-btn" class="nav-category-btn active" role="tab" aria-selected="true" aria-controls="modes-site">
-          <svg class="nav-category-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5l4-2 6 2 4-2v12l-4 2-6-2-4 2V5z"/></svg>
-          <span class="nav-category-label">Audit site</span>
-        </button>
-        <button type="button" id="cat-page-btn" class="nav-category-btn" role="tab" aria-selected="false" aria-controls="modes-page">
+        <button type="button" id="cat-page-btn" class="nav-category-btn active" role="tab" aria-selected="true" aria-controls="modes-page">
           <svg class="nav-category-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>
           <span class="nav-category-label">Audit page</span>
         </button>
+        <button type="button" id="cat-site-btn" class="nav-category-btn" role="tab" aria-selected="false" aria-controls="modes-site">
+          <svg class="nav-category-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5l4-2 6 2 4-2v12l-4 2-6-2-4 2V5z"/></svg>
+          <span class="nav-category-label">Audit site</span>
+        </button>
       </nav>
 
-      <div class="mode-switch mode-switch-group" id="modes-site" data-category="site" role="tablist" aria-label="Audits site">
-        <button type="button" id="mode-sitemap-btn" class="mode-btn active" role="tab" aria-selected="true">
+      <div class="mode-switch mode-switch-group" id="modes-site" data-category="site" role="tablist" aria-label="Audits site" hidden>
+        <button type="button" id="mode-sitemap-btn" class="mode-btn" role="tab" aria-selected="false">
           <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5l4-2 6 2 4-2v12l-4 2-6-2-4 2V5z"/><path d="M7 3v14M13 5v14"/></svg>
           <span class="mode-btn-label">Audit sitemap</span>
         </button>
@@ -63,8 +63,8 @@
         </button>
       </div>
 
-      <div class="mode-switch mode-switch-group" id="modes-page" data-category="page" role="tablist" aria-label="Audits page" hidden>
-        <button type="button" id="mode-tech-btn" class="mode-btn" role="tab" aria-selected="false">
+      <div class="mode-switch mode-switch-group" id="modes-page" data-category="page" role="tablist" aria-label="Audits page">
+        <button type="button" id="mode-tech-btn" class="mode-btn active" role="tab" aria-selected="true">
           <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.8 2.2a3.8 3.8 0 00-4.6 4.9L2.5 13.7 6.3 17.5l6.6-6.7a3.8 3.8 0 004.9-4.6l-2.3 2.3-2-2 2.3-2.3z"/></svg>
           <span class="mode-btn-label">Audit SEO technique</span>
         </button>
@@ -92,7 +92,7 @@
 
       <div id="mode-help" class="muted mode-help">Les deux sont liés: le maillage peut reprendre automatiquement le domaine du sitemap saisi.</div>
 
-      <div id="sitemap-mode-panel">
+      <div id="sitemap-mode-panel" style="display:none;">
         <form id="audit-form">
           <div>
             <label id="label-sitemap" for="sitemap">URL du sitemap</label>
@@ -139,7 +139,7 @@
         <div id="mesh-form-error" class="danger" aria-live="polite"></div>
       </div>
 
-      <div id="tech-mode-panel" style="display:none;">
+      <div id="tech-mode-panel">
         <form id="tech-form" class="tech-form">
           <div>
             <label id="label-tech-url" for="tech_url">URL à auditer</label>
@@ -485,7 +485,7 @@
   <script src="js/features/audits-security.js?v=20260430-3"></script>
   <script src="js/features/audits-images.js?v=20260430-3"></script>
   <script src="js/features/action-plan.js?v=20260430-3"></script>
-  <script src="js/features/changelog.js?v=20260430-4"></script>
+  <script src="js/features/changelog.js?v=20260430-5"></script>
   <script src="js/init.js?v=20260430-3"></script>
   <script src="js/auth-bar.js?v=20260430-3"></script>
   <script src="js/user-history.js?v=20260430-4"></script>

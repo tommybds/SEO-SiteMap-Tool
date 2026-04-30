@@ -3,6 +3,15 @@
 Toutes les évolutions notables du projet sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.0] - 2026-04-30
+
+### Modifié — Navigation
+- « Audit page » devient la catégorie par défaut, « Audit site » passe en seconde position. L'écran d'ouverture présente maintenant l'audit SEO technique sur URL unique (le cas d'usage le plus fréquent).
+
+### Ajouté — Projet
+- Première publication d'un fichier [LICENSE](LICENSE) — **PolyForm Noncommercial 1.0.0**. Usage personnel, recherche, éducation, association caritative autorisé. Usage commercial interdit.
+- README enrichi : badges (last commit, repo size, PHP, Python, license, version), sections obsolètes mises à jour, bloc License ajouté.
+
 ## [1.2.0] - 2026-04-30
 
 ### Modifié — Navigation
@@ -37,6 +46,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 
 # Changelog (English)
 
+## [1.3.0] - 2026-04-30
+
+### Changed — Navigation
+- "Page audit" is now the default category and "Site audit" moves to second position. The landing screen now presents the single-URL technical SEO audit (the most common use case).
+
+### Added — Project
+- First published [LICENSE](LICENSE) file — **PolyForm Noncommercial 1.0.0**. Personal, research, education, charity use allowed. Commercial use prohibited.
+- README enriched: badges (last commit, repo size, PHP, Python, license, version), outdated sections refreshed, License section added.
+
 ## [1.2.0] - 2026-04-30
 
 ### Changed — Navigation
@@ -67,5 +85,6 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 ### Added — UI
 - Version pill `v1.1.0` in the footer; clicking opens a bilingual (fr/en) changelog modal.
 
+[1.3.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.3.0
 [1.2.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.2.0
 [1.1.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.1.0

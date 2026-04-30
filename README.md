@@ -5,13 +5,13 @@
 ![PHP](https://img.shields.io/badge/PHP-8.1+-777BB4?logo=php&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![License: Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange)
-![Version](https://img.shields.io/badge/version-1.2.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.0-blue)
 
 Deploy-ready web tool for Plesk. The UI is organized in two top-level categories,
 plus a persistent action plan that aggregates findings from every audit you run:
 
+- **Audit page** (single URL, default category): `Audit SEO technique`, `Audit GEO`, `Audit sécurité`, `Audit accessibilité`, `Audit images`, `Test redirections`
 - **Audit site** (batch, multi-URL): `Audit sitemap`, `Maillage interne`
-- **Audit page** (single URL): `Audit SEO technique`, `Audit GEO`, `Audit sécurité`, `Audit accessibilité`, `Audit images`, `Test redirections`
 - **Plan d'action** (persistent bottom panel): aggregates findings from every audit you've run, classifies them by owner (SEO / Dev / Content), priority and effort.
 
 ### Demo

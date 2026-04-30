@@ -265,14 +265,14 @@ function t(key, vars = {}) {
 
     function detectInitialMode() {
       const mode = (new URLSearchParams(window.location.search).get('mode') || '').toLowerCase();
+      if (mode === 'sitemap') return 'sitemap';
       if (mode === 'mesh') return 'mesh';
-      if (mode === 'tech') return 'tech';
       if (mode === 'redirect') return 'redirect';
       if (mode === 'accessibility') return 'accessibility';
       if (mode === 'security') return 'security';
       if (mode === 'images') return 'images';
       if (mode === 'geo') return 'geo';
-      return 'sitemap';
+      return 'tech';
     }
 
     function setMeshRunningState(running) {
@@ -344,8 +344,8 @@ function t(key, vars = {}) {
     }
 
     function setMode(mode, syncUrl = true) {
-      const allowed = ['mesh', 'tech', 'redirect', 'accessibility', 'security', 'images', 'geo'];
-      currentMode = allowed.includes(mode) ? mode : 'sitemap';
+      const allowed = ['sitemap', 'mesh', 'tech', 'redirect', 'accessibility', 'security', 'images', 'geo'];
+      currentMode = allowed.includes(mode) ? mode : 'tech';
       if (currentMode === 'tech' && !hasTechMode) currentMode = 'sitemap';
       if (currentMode === 'redirect' && !hasRedirectMode) currentMode = 'sitemap';
       if (currentMode === 'accessibility' && !hasAccessibilityMode) currentMode = 'sitemap';
