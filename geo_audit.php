@@ -143,7 +143,7 @@ function geo_resolve_url(string $baseUrl, string $target): ?string
     return $scheme . '://' . $host . $port . '/' . implode('/', $resolved);
 }
 
-function geo_fetch_once(string $url, int $timeout): array
+function geo_fetch_once(string $url, int $timeout, string $userAgent = 'SEO-Sitemap-Tool-GEOAudit/1.0'): array
 {
     $parsed = parse_url($url);
     if (!is_array($parsed)) {
@@ -177,7 +177,7 @@ function geo_fetch_once(string $url, int $timeout): array
         CURLOPT_MAXREDIRS => 0,
         CURLOPT_CONNECTTIMEOUT => $timeout,
         CURLOPT_TIMEOUT => $timeout,
-        CURLOPT_USERAGENT => 'SEO-Sitemap-Tool-GEOAudit/1.0',
+        CURLOPT_USERAGENT => $userAgent,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
         CURLOPT_PROXY => '',
@@ -238,7 +238,7 @@ function geo_fetch_once(string $url, int $timeout): array
     ];
 }
 
-function geo_fetch_with_redirects(string $url, int $timeout, int $maxRedirects): array
+function geo_fetch_with_redirects(string $url, int $timeout, int $maxRedirects, string $userAgent = 'SEO-Sitemap-Tool-GEOAudit/1.0'): array
 {
     $currentUrl = $url;
     $redirectCount = 0;
@@ -256,7 +256,7 @@ function geo_fetch_with_redirects(string $url, int $timeout, int $maxRedirects):
             return ['ok' => false, 'error' => $validationError, 'redirect_chain' => $chain];
         }
 
-        $fetch = geo_fetch_once($currentUrl, $timeout);
+        $fetch = geo_fetch_once($currentUrl, $timeout, $userAgent);
         if (empty($fetch['ok'])) {
             return ['ok' => false, 'error' => (string) ($fetch['error'] ?? 'Erreur fetch URL.'), 'redirect_chain' => $chain];
         }
@@ -342,28 +342,34 @@ function geo_collect_jsonld_objects(mixed $decoded, array &$objects): void
     }
 }
 
+function geo_jsonld_types_of(array $obj): array
+{
+    $value = $obj['@type'] ?? null;
+    if (is_string($value)) {
+        $type = trim($value);
+        return $type === '' ? [] : [$type];
+    }
+    if (is_array($value)) {
+        $out = [];
+        foreach ($value as $entry) {
+            if (is_string($entry)) {
+                $type = trim($entry);
+                if ($type !== '') {
+                    $out[] = $type;
+                }
+            }
+        }
+        return $out;
+    }
+    return [];
+}
+
 function geo_extract_jsonld_types(array $objects): array
 {
     $types = [];
     foreach ($objects as $obj) {
-        $value = $obj['@type'] ?? null;
-        if (is_string($value)) {
-            $type = trim($value);
-            if ($type !== '') {
-                $types[$type] = true;
-            }
-            continue;
-        }
-        if (is_array($value)) {
-            foreach ($value as $entry) {
-                if (!is_string($entry)) {
-                    continue;
-                }
-                $type = trim($entry);
-                if ($type !== '') {
-                    $types[$type] = true;
-                }
-            }
+        foreach (geo_jsonld_types_of($obj) as $type) {
+            $types[$type] = true;
         }
     }
     $keys = array_keys($types);
@@ -382,6 +388,175 @@ function geo_pick_jsonld_date(array $objects, string $field): string
     return '';
 }
 
+function geo_validate_jsonld_objects(array $objects): array
+{
+    $articleTypes = ['Article', 'NewsArticle', 'BlogPosting', 'TechArticle', 'ScholarlyArticle', 'Report'];
+    $orgTypes = ['Organization', 'LocalBusiness', 'Corporation', 'NewsMediaOrganization'];
+    $personTypes = ['Person'];
+    $faqTypes = ['FAQPage', 'QAPage'];
+    $howToTypes = ['HowTo'];
+
+    $valid = 0;
+    $invalid = 0;
+    $issues = [];
+    $hasValidArticle = false;
+    $hasValidOrganization = false;
+    $hasValidFaq = false;
+    $hasPersonAuthor = false;
+
+    foreach ($objects as $obj) {
+        $types = geo_jsonld_types_of($obj);
+        if (!$types) {
+            continue;
+        }
+        $matched = false;
+
+        foreach ($types as $type) {
+            if (in_array($type, $articleTypes, true)) {
+                $matched = true;
+                $missing = [];
+                foreach (['headline', 'datePublished'] as $required) {
+                    if (trim((string) ($obj[$required] ?? '')) === '') {
+                        $missing[] = $required;
+                    }
+                }
+                $author = $obj['author'] ?? null;
+                if (!$author || (is_array($author) && !array_filter($author, static fn($v) => $v !== '' && $v !== null))) {
+                    $missing[] = 'author';
+                }
+                $datePublished = trim((string) ($obj['datePublished'] ?? ''));
+                if ($datePublished !== '' && strtotime($datePublished) === false) {
+                    $missing[] = 'datePublished (unparsable)';
+                }
+                if ($missing) {
+                    $invalid++;
+                    $issues[] = $type . ': missing ' . implode(', ', $missing);
+                } else {
+                    $valid++;
+                    $hasValidArticle = true;
+                }
+                break;
+            }
+            if (in_array($type, $orgTypes, true)) {
+                $matched = true;
+                $missing = [];
+                foreach (['name', 'url'] as $required) {
+                    if (trim((string) ($obj[$required] ?? '')) === '') {
+                        $missing[] = $required;
+                    }
+                }
+                if ($missing) {
+                    $invalid++;
+                    $issues[] = $type . ': missing ' . implode(', ', $missing);
+                } else {
+                    $valid++;
+                    $hasValidOrganization = true;
+                }
+                break;
+            }
+            if (in_array($type, $personTypes, true)) {
+                $matched = true;
+                if (trim((string) ($obj['name'] ?? '')) === '') {
+                    $invalid++;
+                    $issues[] = 'Person: missing name';
+                } else {
+                    $valid++;
+                    $hasPersonAuthor = true;
+                }
+                break;
+            }
+            if (in_array($type, $faqTypes, true)) {
+                $matched = true;
+                $mainEntity = $obj['mainEntity'] ?? null;
+                $entities = is_array($mainEntity) ? (array_keys($mainEntity) === range(0, count($mainEntity) - 1) ? $mainEntity : [$mainEntity]) : [];
+                $okQuestions = 0;
+                foreach ($entities as $q) {
+                    if (!is_array($q)) {
+                        continue;
+                    }
+                    $accepted = $q['acceptedAnswer'] ?? null;
+                    $answerText = '';
+                    if (is_array($accepted)) {
+                        $answerText = trim((string) ($accepted['text'] ?? ''));
+                    }
+                    if (trim((string) ($q['name'] ?? '')) !== '' && $answerText !== '') {
+                        $okQuestions++;
+                    }
+                }
+                if ($okQuestions === 0) {
+                    $invalid++;
+                    $issues[] = $type . ': missing valid Question/acceptedAnswer';
+                } else {
+                    $valid++;
+                    $hasValidFaq = true;
+                }
+                break;
+            }
+            if (in_array($type, $howToTypes, true)) {
+                $matched = true;
+                $missing = [];
+                foreach (['name', 'step'] as $required) {
+                    if (!isset($obj[$required]) || (is_string($obj[$required]) && trim($obj[$required]) === '') || (is_array($obj[$required]) && count($obj[$required]) === 0)) {
+                        $missing[] = $required;
+                    }
+                }
+                if ($missing) {
+                    $invalid++;
+                    $issues[] = $type . ': missing ' . implode(', ', $missing);
+                } else {
+                    $valid++;
+                }
+                break;
+            }
+        }
+        if (!$matched) {
+            $valid++;
+        }
+    }
+
+    return [
+        'valid' => $valid,
+        'invalid' => $invalid,
+        'issues' => array_slice($issues, 0, 8),
+        'has_valid_article' => $hasValidArticle,
+        'has_valid_organization' => $hasValidOrganization,
+        'has_valid_faq' => $hasValidFaq,
+        'has_person_author' => $hasPersonAuthor,
+    ];
+}
+
+function geo_extract_author_persons(array $objects): array
+{
+    $persons = [];
+    foreach ($objects as $obj) {
+        $candidates = [];
+        if (in_array('Person', geo_jsonld_types_of($obj), true)) {
+            $candidates[] = $obj;
+        }
+        $author = $obj['author'] ?? null;
+        if (is_array($author)) {
+            $isList = array_keys($author) === range(0, count($author) - 1);
+            foreach ($isList ? $author : [$author] as $cand) {
+                if (is_array($cand)) {
+                    $candidates[] = $cand;
+                }
+            }
+        }
+        foreach ($candidates as $cand) {
+            $name = trim((string) ($cand['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $sameAs = isset($cand['sameAs']) ? (is_array($cand['sameAs']) ? $cand['sameAs'] : [$cand['sameAs']]) : [];
+            $persons[] = [
+                'name' => $name,
+                'sameAs' => array_values(array_filter(array_map(static fn($s): string => trim((string) $s), $sameAs))),
+            ];
+        }
+    }
+    return $persons;
+}
+
 function geo_status_factor(string $status): float
 {
     $raw = strtolower(trim($status));
@@ -390,7 +565,121 @@ function geo_status_factor(string $status): float
     return 0.0;
 }
 
-$fetch = geo_fetch_with_redirects($url, $timeout, $maxRedirects);
+function geo_robots_parse_groups(string $robotsTxt): array
+{
+    $groups = [];
+    $currentIdx = -1;
+    $expectingAgents = true;
+    $lines = preg_split('/\r\n|\n|\r/', $robotsTxt) ?: [];
+    foreach ($lines as $line) {
+        $line = (string) preg_replace('/#.*$/', '', (string) $line);
+        $line = trim($line);
+        if ($line === '' || !str_contains($line, ':')) {
+            continue;
+        }
+        [$key, $value] = array_map('trim', explode(':', $line, 2));
+        $keyLower = strtolower($key);
+        if ($keyLower === 'user-agent') {
+            if (!$expectingAgents || $currentIdx < 0) {
+                $groups[] = ['agents' => [], 'rules' => []];
+                $currentIdx = count($groups) - 1;
+                $expectingAgents = true;
+            }
+            $groups[$currentIdx]['agents'][] = strtolower($value);
+        } elseif ($currentIdx >= 0 && in_array($keyLower, ['allow', 'disallow'], true)) {
+            $expectingAgents = false;
+            $groups[$currentIdx]['rules'][] = ['type' => $keyLower, 'value' => $value];
+        }
+    }
+    return $groups;
+}
+
+function geo_robots_check_path_for_ua(string $robotsTxt, string $userAgent, string $path): array
+{
+    $userAgent = strtolower(trim($userAgent));
+    if ($path === '') {
+        $path = '/';
+    }
+    $groups = geo_robots_parse_groups($robotsTxt);
+
+    $matchedAgent = null;
+    $matchedGroup = null;
+    foreach ($groups as $group) {
+        if (in_array($userAgent, $group['agents'], true)) {
+            $matchedAgent = $userAgent;
+            $matchedGroup = $group;
+            break;
+        }
+    }
+    if ($matchedGroup === null) {
+        foreach ($groups as $group) {
+            if (in_array('*', $group['agents'], true)) {
+                $matchedAgent = '*';
+                $matchedGroup = $group;
+                break;
+            }
+        }
+    }
+    if ($matchedGroup === null) {
+        return ['allowed' => true, 'matched_agent' => null, 'matched_rule' => null];
+    }
+
+    $bestLen = -1;
+    $bestType = null;
+    $bestValue = null;
+    foreach ($matchedGroup['rules'] as $rule) {
+        $pattern = (string) $rule['value'];
+        if ($pattern === '' && $rule['type'] === 'disallow') {
+            continue;
+        }
+        if (!geo_robots_path_matches($pattern, $path)) {
+            continue;
+        }
+        $len = strlen($pattern);
+        if ($len > $bestLen || ($len === $bestLen && $rule['type'] === 'allow')) {
+            $bestLen = $len;
+            $bestType = $rule['type'];
+            $bestValue = $pattern;
+        }
+    }
+
+    if ($bestType === null) {
+        return ['allowed' => true, 'matched_agent' => $matchedAgent, 'matched_rule' => null];
+    }
+    return [
+        'allowed' => $bestType === 'allow',
+        'matched_agent' => $matchedAgent,
+        'matched_rule' => $bestType . ': ' . $bestValue,
+    ];
+}
+
+function geo_robots_path_matches(string $pattern, string $path): bool
+{
+    if ($pattern === '') {
+        return true;
+    }
+    $endAnchor = false;
+    if (str_ends_with($pattern, '$')) {
+        $endAnchor = true;
+        $pattern = substr($pattern, 0, -1);
+    }
+    $regex = '';
+    $len = strlen($pattern);
+    for ($i = 0; $i < $len; $i++) {
+        $c = $pattern[$i];
+        if ($c === '*') {
+            $regex .= '.*';
+        } else {
+            $regex .= preg_quote($c, '~');
+        }
+    }
+    $regex = '~^' . $regex . ($endAnchor ? '$' : '') . '~';
+    return (bool) preg_match($regex, $path);
+}
+
+$primaryUserAgent = 'Mozilla/5.0 (compatible; SEO-Sitemap-Tool-GEOAudit/2.0)';
+
+$fetch = geo_fetch_with_redirects($url, $timeout, $maxRedirects, $primaryUserAgent);
 if (empty($fetch['ok'])) {
     respond_json(['error' => (string) ($fetch['error'] ?? 'Erreur audit GEO')], 502);
 }
@@ -416,6 +705,8 @@ $firstParagraphLen = 0;
 $h1Count = 0;
 $h2Count = 0;
 $h3Count = 0;
+$h2WithIdCount = 0;
+$h2TotalCount = 0;
 $listCount = 0;
 $tableCount = 0;
 $internalLinksCount = 0;
@@ -423,9 +714,18 @@ $externalLinksCount = 0;
 $aboutContactLinks = 0;
 $questionHeadingsCount = 0;
 $faqDomBlocks = 0;
-$authorSignals = 0;
 $publishedDate = '';
 $modifiedDate = '';
+$canonicalHref = '';
+$ogTitle = '';
+$ogDescription = '';
+$ogType = '';
+$ogImage = '';
+$twitterCard = '';
+$twitterTitle = '';
+$baseHref = '';
+$bylineDomSignals = 0;
+$authorMetaSignal = false;
 
 $jsonLdBlocks = geo_extract_jsonld_blocks($body);
 $jsonLdObjects = [];
@@ -437,14 +737,30 @@ foreach ($jsonLdBlocks as $block) {
     geo_collect_jsonld_objects($decoded, $jsonLdObjects);
 }
 $jsonLdTypes = geo_extract_jsonld_types($jsonLdObjects);
-$hasOrganization = in_array('Organization', $jsonLdTypes, true) || in_array('LocalBusiness', $jsonLdTypes, true);
-$hasFaqMarkup = in_array('FAQPage', $jsonLdTypes, true) || in_array('QAPage', $jsonLdTypes, true);
+$jsonLdValidation = geo_validate_jsonld_objects($jsonLdObjects);
+$authorPersons = geo_extract_author_persons($jsonLdObjects);
+$hasOrganization = $jsonLdValidation['has_valid_organization']
+    || in_array('Organization', $jsonLdTypes, true)
+    || in_array('LocalBusiness', $jsonLdTypes, true);
+$hasFaqMarkup = $jsonLdValidation['has_valid_faq']
+    || in_array('FAQPage', $jsonLdTypes, true)
+    || in_array('QAPage', $jsonLdTypes, true);
 
 if ($isHtml && class_exists('DOMDocument')) {
     libxml_use_internal_errors(true);
     $dom = new DOMDocument();
     @$dom->loadHTML($body, LIBXML_NOWARNING | LIBXML_NOERROR | LIBXML_NONET);
     $xpath = new DOMXPath($dom);
+
+    $baseNode = $xpath->query('//base[@href]/@href');
+    if ($baseNode !== false && $baseNode->length > 0) {
+        $candidate = trim((string) $baseNode->item(0)->textContent);
+        if ($candidate !== '') {
+            $resolvedBase = geo_resolve_url($finalUrl, $candidate);
+            $baseHref = is_string($resolvedBase) && $resolvedBase !== '' ? $resolvedBase : $candidate;
+        }
+    }
+    $resolutionBase = $baseHref !== '' ? $baseHref : $finalUrl;
 
     $titleNode = $xpath->query('//title');
     if ($titleNode !== false && $titleNode->length > 0) {
@@ -461,6 +777,41 @@ if ($isHtml && class_exists('DOMDocument')) {
         $metaRobots = strtolower(geo_normalize_space((string) $metaRobotsNode->item(0)->textContent));
     }
 
+    $canonicalNode = $xpath->query('//link[translate(@rel, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="canonical"]/@href');
+    if ($canonicalNode !== false && $canonicalNode->length > 0) {
+        $candidate = trim((string) $canonicalNode->item(0)->textContent);
+        if ($candidate !== '') {
+            $resolved = geo_resolve_url($resolutionBase, $candidate);
+            $canonicalHref = is_string($resolved) && $resolved !== '' ? $resolved : $candidate;
+        }
+    }
+
+    $ogTitleNode = $xpath->query('//meta[translate(@property, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="og:title"]/@content');
+    if ($ogTitleNode !== false && $ogTitleNode->length > 0) {
+        $ogTitle = geo_normalize_space((string) $ogTitleNode->item(0)->textContent);
+    }
+    $ogDescNode = $xpath->query('//meta[translate(@property, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="og:description"]/@content');
+    if ($ogDescNode !== false && $ogDescNode->length > 0) {
+        $ogDescription = geo_normalize_space((string) $ogDescNode->item(0)->textContent);
+    }
+    $ogTypeNode = $xpath->query('//meta[translate(@property, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="og:type"]/@content');
+    if ($ogTypeNode !== false && $ogTypeNode->length > 0) {
+        $ogType = geo_normalize_space((string) $ogTypeNode->item(0)->textContent);
+    }
+    $ogImageNode = $xpath->query('//meta[translate(@property, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="og:image"]/@content');
+    if ($ogImageNode !== false && $ogImageNode->length > 0) {
+        $ogImage = geo_normalize_space((string) $ogImageNode->item(0)->textContent);
+    }
+
+    $twitterCardNode = $xpath->query('//meta[translate(@name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="twitter:card"]/@content');
+    if ($twitterCardNode !== false && $twitterCardNode->length > 0) {
+        $twitterCard = geo_normalize_space((string) $twitterCardNode->item(0)->textContent);
+    }
+    $twitterTitleNode = $xpath->query('//meta[translate(@name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="twitter:title"]/@content');
+    if ($twitterTitleNode !== false && $twitterTitleNode->length > 0) {
+        $twitterTitle = geo_normalize_space((string) $twitterTitleNode->item(0)->textContent);
+    }
+
     $metaPublished = $xpath->query('//meta[@property="article:published_time"]/@content');
     if ($metaPublished !== false && $metaPublished->length > 0) {
         $publishedDate = trim((string) $metaPublished->item(0)->textContent);
@@ -474,19 +825,26 @@ if ($isHtml && class_exists('DOMDocument')) {
     $h1Count = (int) ($xpath->query('//h1')->length ?? 0);
     $h2Count = (int) ($xpath->query('//h2')->length ?? 0);
     $h3Count = (int) ($xpath->query('//h3')->length ?? 0);
+    $h2TotalCount = $h2Count;
+    $h2WithIdNodes = $xpath->query('//h2[@id]');
+    if ($h2WithIdNodes !== false) {
+        $h2WithIdCount = (int) $h2WithIdNodes->length;
+    }
     $listCount = (int) (($xpath->query('//ul')->length ?? 0) + ($xpath->query('//ol')->length ?? 0));
     $tableCount = (int) ($xpath->query('//table')->length ?? 0);
 
     $paragraphs = $xpath->query('//p');
     if ($paragraphs !== false) {
         $paragraphCount = (int) $paragraphs->length;
-        foreach ($paragraphs as $idx => $paragraph) {
+        $firstFound = false;
+        foreach ($paragraphs as $paragraph) {
             $text = geo_normalize_space((string) $paragraph->textContent);
             if ($text === '') {
                 continue;
             }
-            if ($idx === 0) {
+            if (!$firstFound) {
                 $firstParagraphLen = geo_strlen($text);
+                $firstFound = true;
             }
             $words = preg_split('/\s+/u', $text) ?: [];
             $wordCount += count(array_filter($words, static fn($w): bool => trim((string) $w) !== ''));
@@ -495,39 +853,49 @@ if ($isHtml && class_exists('DOMDocument')) {
 
     $headings = $xpath->query('//h2|//h3|//h4');
     if ($headings !== false) {
+        $questionWordPattern = '/^(comment|pourquoi|quand|que|qu[\'’]|qui|où|how|what|why|when|where|who|which|cómo|por\s+qué|qué|cuándo|dónde|wie|warum|wann|wo|was|wer|come|perché|quando|dove|cosa|chi)\s/iu';
         foreach ($headings as $heading) {
-            $text = strtolower(geo_normalize_space((string) $heading->textContent));
+            $text = geo_normalize_space((string) $heading->textContent);
             if ($text === '') {
                 continue;
             }
-            if (str_contains($text, '?') || preg_match('/\b(comment|pourquoi|quoi|quand|how|what|why|when)\b/u', $text)) {
+            $hasQuestionMark = str_contains($text, '?');
+            $startsWithInterrogative = (bool) preg_match($questionWordPattern, mb_strtolower($text, 'UTF-8') . ' ');
+            if ($hasQuestionMark || $startsWithInterrogative) {
                 $questionHeadingsCount++;
             }
         }
     }
 
-    $faqDomBlocks = (int) ($xpath->query('//*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "faq")]')->length ?? 0);
-    $faqDomBlocks += (int) ($xpath->query('//*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "question")]')->length ?? 0);
-    $faqDomBlocks += (int) ($xpath->query('//*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "answer")]')->length ?? 0);
+    $faqXpath = '//*['
+        . 'contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "faq")'
+        . ' or @itemtype="https://schema.org/FAQPage"'
+        . ' or @itemtype="http://schema.org/FAQPage"'
+        . ']';
+    $faqNodeList = $xpath->query($faqXpath);
+    $faqDomBlocks = $faqNodeList === false ? 0 : (int) $faqNodeList->length;
 
     $authorMeta = $xpath->query('//meta[translate(@name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="author"]/@content');
     if ($authorMeta !== false && $authorMeta->length > 0 && trim((string) $authorMeta->item(0)->textContent) !== '') {
-        $authorSignals++;
+        $authorMetaSignal = true;
     }
-    $authorEls = $xpath->query('//*[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "author") or contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "byline")]');
-    if ($authorEls !== false && $authorEls->length > 0) {
-        $authorSignals += (int) min(2, $authorEls->length);
+    $authorRel = $xpath->query('//a[translate(@rel, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="author"]');
+    $authorRelCount = $authorRel === false ? 0 : (int) $authorRel->length;
+    $authorEls = $xpath->query('//*[@itemprop="author" or contains(concat(" ", normalize-space(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")), " "), " author ") or contains(concat(" ", normalize-space(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")), " "), " byline ")]');
+    if ($authorEls !== false) {
+        $bylineDomSignals = (int) $authorEls->length;
     }
+    $bylineDomSignals += $authorRelCount;
 
     $finalHost = strtolower((string) parse_url($finalUrl, PHP_URL_HOST));
     $anchors = $xpath->query('//a[@href]');
     if ($anchors !== false) {
         foreach ($anchors as $a) {
             $href = trim((string) $a->getAttribute('href'));
-            if ($href === '' || str_starts_with($href, '#') || str_starts_with(strtolower($href), 'javascript:')) {
+            if ($href === '' || str_starts_with($href, '#') || str_starts_with(strtolower($href), 'javascript:') || str_starts_with(strtolower($href), 'mailto:') || str_starts_with(strtolower($href), 'tel:')) {
                 continue;
             }
-            $resolved = geo_resolve_url($finalUrl, $href);
+            $resolved = geo_resolve_url($resolutionBase, $href);
             if (!is_string($resolved) || $resolved === '') {
                 continue;
             }
@@ -538,7 +906,7 @@ if ($isHtml && class_exists('DOMDocument')) {
             } else {
                 $externalLinksCount++;
             }
-            if (preg_match('~/(about|a-propos|contact|mentions-legales)~', $path)) {
+            if (preg_match('~/(about|a-propos|contact|mentions-legales|qui-sommes-nous|quienes-somos|impressum|chi-siamo)~', $path)) {
                 $aboutContactLinks++;
             }
         }
@@ -565,23 +933,180 @@ if ($modifiedDate !== '') {
     }
 }
 
+$finalHost = strtolower((string) parse_url($finalUrl, PHP_URL_HOST));
+$finalScheme = strtolower((string) parse_url($finalUrl, PHP_URL_SCHEME)) ?: 'https';
+
+$siteRoot = $finalScheme . '://' . $finalHost;
+$auxTimeout = max(3, (int) floor($timeout / 2));
+
+$llmsTxtUrl = $siteRoot . '/llms.txt';
+$llmsTxtPresent = false;
+$llmsTxtSize = 0;
+$llmsValidationError = '';
+if ($finalHost !== '' && validate_public_url($llmsTxtUrl, $llmsValidationError)) {
+    $llmsFetch = geo_fetch_once($llmsTxtUrl, $auxTimeout, $primaryUserAgent);
+    if (!empty($llmsFetch['ok']) && (int) ($llmsFetch['status_code'] ?? 0) === 200) {
+        $bodyLlms = trim((string) ($llmsFetch['body'] ?? ''));
+        if ($bodyLlms !== '' && stripos((string) ($llmsFetch['content_type'] ?? ''), 'html') === false) {
+            $llmsTxtPresent = true;
+            $llmsTxtSize = strlen($bodyLlms);
+        }
+    }
+}
+
+$robotsTxtUrl = $siteRoot . '/robots.txt';
+$robotsTxtBody = '';
+$robotsValidationError = '';
+if ($finalHost !== '' && validate_public_url($robotsTxtUrl, $robotsValidationError)) {
+    $robotsFetch = geo_fetch_once($robotsTxtUrl, $auxTimeout, $primaryUserAgent);
+    if (!empty($robotsFetch['ok']) && (int) ($robotsFetch['status_code'] ?? 0) === 200) {
+        $robotsTxtBody = (string) ($robotsFetch['body'] ?? '');
+    }
+}
+
+$pathForRobots = (string) (parse_url($finalUrl, PHP_URL_PATH) ?: '/');
+$aiUserAgents = [
+    'GPTBot',
+    'OAI-SearchBot',
+    'ChatGPT-User',
+    'ClaudeBot',
+    'anthropic-ai',
+    'PerplexityBot',
+    'Perplexity-User',
+    'Google-Extended',
+    'Applebot-Extended',
+    'CCBot',
+    'Bytespider',
+    'Meta-ExternalAgent',
+    'cohere-ai',
+    'DuckAssistBot',
+];
+$aiBotResults = [];
+$aiBlockedCount = 0;
+foreach ($aiUserAgents as $bot) {
+    if ($robotsTxtBody === '') {
+        $aiBotResults[$bot] = ['allowed' => true, 'matched_agent' => null, 'reason' => 'no robots.txt'];
+        continue;
+    }
+    $check = geo_robots_check_path_for_ua($robotsTxtBody, $bot, $pathForRobots);
+    $aiBotResults[$bot] = [
+        'allowed' => (bool) ($check['allowed'] ?? true),
+        'matched_agent' => $check['matched_agent'] ?? null,
+        'matched_rule' => $check['matched_rule'] ?? null,
+    ];
+    if (!$aiBotResults[$bot]['allowed']) {
+        $aiBlockedCount++;
+    }
+}
+
 $checks = [];
-$addCheck = static function (string $key, string $status, string $value) use (&$checks): void {
-    $checks[] = ['key' => $key, 'status' => $status, 'value' => $value];
+$weights = [
+    'geo_http_status_2xx' => 10,
+    'geo_html_content_type' => 6,
+    'geo_indexable' => 8,
+    'geo_canonical' => 5,
+    'geo_open_graph' => 4,
+    'geo_twitter_card' => 2,
+    'geo_h1_unique' => 3,
+    'geo_structured_data' => 8,
+    'geo_jsonld_validity' => 7,
+    'geo_organization_entity' => 7,
+    'geo_author_signal' => 6,
+    'geo_date_metadata' => 6,
+    'geo_freshness' => 6,
+    'geo_qa_format' => 6,
+    'geo_faq_markup' => 4,
+    'geo_content_depth' => 5,
+    'geo_internal_links' => 3,
+    'geo_citations_external' => 2,
+    'geo_list_table_blocks' => 2,
+    'geo_heading_anchors' => 3,
+    'geo_llms_txt' => 4,
+    'geo_ai_crawlers_allowed' => 8,
+];
+
+$addCheck = static function (string $key, string $status, string $value) use (&$checks, $weights): void {
+    $checks[] = [
+        'key' => $key,
+        'status' => $status,
+        'value' => $value,
+        'weight' => (int) ($weights[$key] ?? 0),
+    ];
 };
 
 $addCheck('geo_http_status_2xx', ($statusCode >= 200 && $statusCode < 300) ? 'pass' : 'fail', (string) $statusCode);
 $addCheck('geo_html_content_type', $isHtml ? 'pass' : 'fail', $contentType !== '' ? $contentType : '-');
 $addCheck('geo_indexable', $indexable ? 'pass' : 'fail', $indexable ? 'indexable' : 'noindex signal');
 
+$canonicalSameDomain = false;
+if ($canonicalHref !== '') {
+    $canonHost = strtolower((string) parse_url($canonicalHref, PHP_URL_HOST));
+    $canonicalSameDomain = ($canonHost !== '' && $finalHost !== '' && $canonHost === $finalHost);
+}
+$canonicalStatus = $canonicalSameDomain ? 'pass' : ($canonicalHref !== '' ? 'warn' : 'fail');
+$canonicalDisplay = $canonicalHref !== '' ? $canonicalHref : 'missing';
+$addCheck('geo_canonical', $canonicalStatus, $canonicalDisplay);
+
+$ogPresent = ($ogTitle !== '') + ($ogDescription !== '') + ($ogType !== '');
+$ogStatus = $ogPresent >= 3 ? 'pass' : ($ogPresent >= 1 ? 'warn' : 'fail');
+$addCheck('geo_open_graph', $ogStatus, sprintf('title:%s desc:%s type:%s', $ogTitle !== '' ? '✓' : '·', $ogDescription !== '' ? '✓' : '·', $ogType !== '' ? '✓' : '·'));
+
+$twitterStatus = ($twitterCard !== '' && $twitterTitle !== '') ? 'pass' : (($twitterCard !== '' || $twitterTitle !== '') ? 'warn' : 'warn');
+$addCheck('geo_twitter_card', $twitterStatus, $twitterCard !== '' ? $twitterCard : 'missing');
+
+$h1Status = $h1Count === 1 ? 'pass' : ($h1Count === 0 ? 'fail' : 'warn');
+$addCheck('geo_h1_unique', $h1Status, (string) $h1Count);
+
 $structuredStatus = count($jsonLdTypes) >= 2 ? 'pass' : (count($jsonLdTypes) === 1 ? 'warn' : 'fail');
 $addCheck('geo_structured_data', $structuredStatus, count($jsonLdTypes) > 0 ? implode(', ', array_slice($jsonLdTypes, 0, 6)) : 'none');
 
-$orgStatus = ($hasOrganization || $aboutContactLinks > 0) ? 'pass' : 'fail';
-$addCheck('geo_organization_entity', $orgStatus, $hasOrganization ? 'schema Organization' : 'missing Organization/entity signals');
+if (count($jsonLdObjects) === 0) {
+    $jsonldValidStatus = 'fail';
+    $jsonldValidValue = 'no JSON-LD';
+} else {
+    $valid = (int) $jsonLdValidation['valid'];
+    $invalid = (int) $jsonLdValidation['invalid'];
+    if ($invalid === 0) {
+        $jsonldValidStatus = 'pass';
+    } elseif ($valid > 0) {
+        $jsonldValidStatus = 'warn';
+    } else {
+        $jsonldValidStatus = 'fail';
+    }
+    $jsonldValidValue = sprintf('%d valid / %d invalid', $valid, $invalid);
+    if (!empty($jsonLdValidation['issues'])) {
+        $jsonldValidValue .= ' (' . implode(' | ', array_slice($jsonLdValidation['issues'], 0, 3)) . ')';
+    }
+}
+$addCheck('geo_jsonld_validity', $jsonldValidStatus, $jsonldValidValue);
 
-$authorStatus = $authorSignals >= 2 ? 'pass' : ($authorSignals === 1 ? 'warn' : 'fail');
-$addCheck('geo_author_signal', $authorStatus, (string) $authorSignals);
+$orgStatus = ($hasOrganization || $aboutContactLinks > 0) ? 'pass' : 'fail';
+$addCheck('geo_organization_entity', $orgStatus, $jsonLdValidation['has_valid_organization'] ? 'schema Organization (valid)' : ($hasOrganization ? 'schema Organization' : ($aboutContactLinks > 0 ? 'about/contact links' : 'missing entity signals')));
+
+$authorScore = 0;
+if ($jsonLdValidation['has_person_author']) {
+    $authorScore += 3;
+}
+if (count($authorPersons) > 0) {
+    $sameAsCount = 0;
+    foreach ($authorPersons as $person) {
+        $sameAsCount += count($person['sameAs'] ?? []);
+    }
+    if ($sameAsCount > 0) {
+        $authorScore += 2;
+    } elseif ($authorScore === 0) {
+        $authorScore += 1;
+    }
+}
+if ($authorMetaSignal) {
+    $authorScore += 1;
+}
+if ($bylineDomSignals > 0) {
+    $authorScore += min(2, (int) ceil($bylineDomSignals / 2));
+}
+$authorStatus = $authorScore >= 3 ? 'pass' : ($authorScore >= 1 ? 'warn' : 'fail');
+$authorDisplay = sprintf('score:%d persons:%d byline:%d meta:%s', $authorScore, count($authorPersons), $bylineDomSignals, $authorMetaSignal ? 'yes' : 'no');
+$addCheck('geo_author_signal', $authorStatus, $authorDisplay);
 
 $dateStatus = ($publishedDate !== '' && $modifiedDate !== '') ? 'pass' : (($publishedDate !== '' || $modifiedDate !== '') ? 'warn' : 'fail');
 $addCheck('geo_date_metadata', $dateStatus, trim($publishedDate . ' / ' . $modifiedDate, ' /') ?: 'none');
@@ -608,9 +1133,9 @@ if ($paragraphCount >= 3) {
 $qaStatus = $qaSignals >= 2 ? 'pass' : ($qaSignals === 1 ? 'warn' : 'fail');
 $addCheck('geo_qa_format', $qaStatus, sprintf('q:%d p:%d intro:%d', $questionHeadingsCount, $paragraphCount, $firstParagraphLen));
 
-$faqSignals = ($hasFaqMarkup ? 1 : 0) + ($faqDomBlocks > 0 ? 1 : 0);
-$faqStatus = $faqSignals >= 1 ? 'pass' : 'warn';
-$addCheck('geo_faq_markup', $faqStatus, $hasFaqMarkup ? 'FAQPage/QAPage' : (string) $faqDomBlocks . ' faq blocks');
+$faqSignals = ($jsonLdValidation['has_valid_faq'] ? 2 : 0) + ($hasFaqMarkup && !$jsonLdValidation['has_valid_faq'] ? 1 : 0) + ($faqDomBlocks > 0 ? 1 : 0);
+$faqStatus = $faqSignals >= 2 ? 'pass' : ($faqSignals === 1 ? 'warn' : 'warn');
+$addCheck('geo_faq_markup', $faqStatus, $jsonLdValidation['has_valid_faq'] ? 'FAQPage (valid)' : ($hasFaqMarkup ? 'FAQPage/QAPage (no acceptedAnswer)' : (string) $faqDomBlocks . ' faq blocks'));
 
 $depthStatus = $wordCount >= 350 ? 'pass' : ($wordCount >= 180 ? 'warn' : 'fail');
 $addCheck('geo_content_depth', $depthStatus, (string) $wordCount . ' words');
@@ -624,24 +1149,46 @@ $addCheck('geo_citations_external', $citationsStatus, (string) $externalLinksCou
 $blocksStatus = ($listCount + $tableCount) >= 1 ? 'pass' : 'warn';
 $addCheck('geo_list_table_blocks', $blocksStatus, sprintf('list:%d table:%d', $listCount, $tableCount));
 
-$weights = [
-    'geo_http_status_2xx' => 12,
-    'geo_html_content_type' => 8,
-    'geo_indexable' => 10,
-    'geo_structured_data' => 12,
-    'geo_organization_entity' => 9,
-    'geo_author_signal' => 7,
-    'geo_date_metadata' => 8,
-    'geo_freshness' => 8,
-    'geo_qa_format' => 9,
-    'geo_faq_markup' => 5,
-    'geo_content_depth' => 5,
-    'geo_internal_links' => 3,
-    'geo_citations_external' => 2,
-    'geo_list_table_blocks' => 2,
-];
+if ($h2TotalCount === 0) {
+    $anchorStatus = 'warn';
+    $anchorValue = 'no h2';
+} else {
+    $ratio = $h2WithIdCount / max(1, $h2TotalCount);
+    if ($h2WithIdCount >= 2 && $ratio >= 0.5) {
+        $anchorStatus = 'pass';
+    } elseif ($h2WithIdCount >= 1) {
+        $anchorStatus = 'warn';
+    } else {
+        $anchorStatus = 'fail';
+    }
+    $anchorValue = sprintf('%d/%d h2 with id', $h2WithIdCount, $h2TotalCount);
+}
+$addCheck('geo_heading_anchors', $anchorStatus, $anchorValue);
+
+$llmsStatus = $llmsTxtPresent ? 'pass' : 'warn';
+$llmsValue = $llmsTxtPresent ? sprintf('%d bytes at /llms.txt', $llmsTxtSize) : 'missing';
+$addCheck('geo_llms_txt', $llmsStatus, $llmsValue);
+
+if ($robotsTxtBody === '') {
+    $aiCrawlerStatus = 'warn';
+    $aiCrawlerValue = 'robots.txt unreachable';
+} elseif ($aiBlockedCount === 0) {
+    $aiCrawlerStatus = 'pass';
+    $aiCrawlerValue = sprintf('%d AI bots checked, all allowed', count($aiUserAgents));
+} else {
+    $blockedNames = [];
+    foreach ($aiBotResults as $bot => $info) {
+        if (!$info['allowed']) {
+            $blockedNames[] = $bot;
+        }
+    }
+    $aiCrawlerStatus = $aiBlockedCount >= 4 ? 'fail' : 'warn';
+    $aiCrawlerValue = $aiBlockedCount . ' blocked: ' . implode(', ', array_slice($blockedNames, 0, 5));
+}
+$addCheck('geo_ai_crawlers_allowed', $aiCrawlerStatus, $aiCrawlerValue);
 
 $scoreRaw = 0.0;
+$scoreMax = 0.0;
 $counts = ['pass' => 0, 'warn' => 0, 'fail' => 0];
 foreach ($checks as $check) {
     $status = strtolower((string) ($check['status'] ?? 'warn'));
@@ -649,10 +1196,11 @@ foreach ($checks as $check) {
         $status = 'warn';
     }
     $counts[$status]++;
-    $weight = (float) ($weights[(string) ($check['key'] ?? '')] ?? 0.0);
+    $weight = (float) ($check['weight'] ?? 0);
+    $scoreMax += $weight;
     $scoreRaw += $weight * geo_status_factor($status);
 }
-$score = (int) max(0, min(100, round($scoreRaw)));
+$score = $scoreMax > 0 ? (int) max(0, min(100, round(($scoreRaw / $scoreMax) * 100))) : 0;
 
 $recommendations = [];
 $pushReco = static function (string $key) use (&$recommendations): void {
@@ -664,7 +1212,12 @@ $statusByKey = [];
 foreach ($checks as $check) {
     $statusByKey[(string) $check['key']] = strtolower((string) ($check['status'] ?? 'warn'));
 }
+if (($statusByKey['geo_canonical'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_canonical');
+if (($statusByKey['geo_open_graph'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_open_graph');
+if (($statusByKey['geo_twitter_card'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_twitter_card');
+if (($statusByKey['geo_h1_unique'] ?? 'warn') !== 'pass') $pushReco('geo_reco_fix_h1');
 if (($statusByKey['geo_structured_data'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_structured_data');
+if (($statusByKey['geo_jsonld_validity'] ?? 'warn') !== 'pass') $pushReco('geo_reco_fix_jsonld');
 if (($statusByKey['geo_organization_entity'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_organization_entity');
 if (($statusByKey['geo_author_signal'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_author_signals');
 if (($statusByKey['geo_date_metadata'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_dates');
@@ -674,9 +1227,12 @@ if (($statusByKey['geo_faq_markup'] ?? 'warn') !== 'pass') $pushReco('geo_reco_a
 if (($statusByKey['geo_content_depth'] ?? 'warn') !== 'pass') $pushReco('geo_reco_deepen_content');
 if (($statusByKey['geo_internal_links'] ?? 'warn') !== 'pass') $pushReco('geo_reco_improve_internal_links');
 if (($statusByKey['geo_citations_external'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_external_citations');
+if (($statusByKey['geo_heading_anchors'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_heading_anchors');
+if (($statusByKey['geo_llms_txt'] ?? 'warn') !== 'pass') $pushReco('geo_reco_add_llms_txt');
+if (($statusByKey['geo_ai_crawlers_allowed'] ?? 'warn') !== 'pass') $pushReco('geo_reco_unblock_ai_crawlers');
 
 $checklist = ['high' => [], 'medium' => [], 'low' => []];
-$highKeys = ['geo_http_status_2xx', 'geo_html_content_type', 'geo_indexable', 'geo_structured_data', 'geo_organization_entity'];
+$highKeys = ['geo_http_status_2xx', 'geo_html_content_type', 'geo_indexable', 'geo_structured_data', 'geo_organization_entity', 'geo_ai_crawlers_allowed', 'geo_jsonld_validity'];
 foreach ($checks as $check) {
     $key = (string) ($check['key'] ?? '');
     $status = strtolower((string) ($check['status'] ?? 'warn'));
@@ -714,16 +1270,35 @@ $payload = [
             'h1_count' => $h1Count,
             'h2_count' => $h2Count,
             'h3_count' => $h3Count,
+            'h2_with_id_count' => $h2WithIdCount,
             'word_count' => $wordCount,
             'paragraph_count' => $paragraphCount,
             'internal_links_count' => $internalLinksCount,
             'external_links_count' => $externalLinksCount,
             'structured_types' => $jsonLdTypes,
+            'jsonld_valid' => (int) $jsonLdValidation['valid'],
+            'jsonld_invalid' => (int) $jsonLdValidation['invalid'],
+            'jsonld_issues' => $jsonLdValidation['issues'],
+            'author_persons' => $authorPersons,
+            'canonical' => $canonicalHref,
+            'canonical_same_domain' => $canonicalSameDomain,
+            'og_title' => $ogTitle,
+            'og_description' => $ogDescription,
+            'og_type' => $ogType,
+            'og_image' => $ogImage,
+            'twitter_card' => $twitterCard,
+            'twitter_title' => $twitterTitle,
             'published_date' => $publishedDate,
             'modified_date' => $modifiedDate,
             'freshness_days' => $freshnessDays,
             'question_headings_count' => $questionHeadingsCount,
             'faq_dom_blocks' => $faqDomBlocks,
+            'llms_txt_present' => $llmsTxtPresent,
+            'llms_txt_size' => $llmsTxtSize,
+            'llms_txt_url' => $llmsTxtUrl,
+            'robots_txt_reachable' => $robotsTxtBody !== '',
+            'ai_bots' => $aiBotResults,
+            'ai_bots_blocked' => $aiBlockedCount,
         ],
     ],
 ];

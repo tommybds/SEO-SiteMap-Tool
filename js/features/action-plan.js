@@ -129,11 +129,21 @@ function normalizeActionPlanPriority(priority) {
 
     function classifyGeoRecommendation(key) {
       const safe = String(key || '').trim().toLowerCase();
-      if (safe === 'geo_reco_add_structured_data' || safe === 'geo_reco_add_faq_markup') {
+      if (safe === 'geo_reco_add_canonical' || safe === 'geo_reco_add_open_graph'
+        || safe === 'geo_reco_add_twitter_card' || safe === 'geo_reco_fix_h1'
+        || safe === 'geo_reco_add_heading_anchors') {
+        return { owner: 'dev', effort: 'low', quickWin: true };
+      }
+      if (safe === 'geo_reco_add_llms_txt' || safe === 'geo_reco_unblock_ai_crawlers') {
+        return { owner: 'dev', effort: 'low', quickWin: true };
+      }
+      if (safe === 'geo_reco_add_structured_data' || safe === 'geo_reco_add_faq_markup'
+        || safe === 'geo_reco_fix_jsonld') {
         return { owner: 'dev', effort: 'medium', quickWin: false };
       }
       if (safe === 'geo_reco_add_dates' || safe === 'geo_reco_refresh_content' || safe === 'geo_reco_improve_qa_format'
-        || safe === 'geo_reco_deepen_content' || safe === 'geo_reco_add_external_citations') {
+        || safe === 'geo_reco_deepen_content' || safe === 'geo_reco_add_external_citations'
+        || safe === 'geo_reco_add_author_signals') {
         return { owner: 'content', effort: 'medium', quickWin: false };
       }
       return { owner: 'seo', effort: 'medium', quickWin: false };

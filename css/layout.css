@@ -79,3 +79,137 @@
 .app-footer a:hover {
   text-decoration: underline;
 }
+
+.footer-version-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.footer-version-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.footer-sep {
+  margin: 0 6px;
+  color: #cbd5e1;
+}
+
+.changelog-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8vh 16px 16px;
+  z-index: 9000;
+  overflow-y: auto;
+}
+
+.changelog-modal[hidden] {
+  display: none;
+}
+
+body.changelog-open {
+  overflow: hidden;
+}
+
+.changelog-dialog {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 640px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.changelog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+.changelog-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.changelog-close {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 6px;
+}
+
+.changelog-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.changelog-body {
+  padding: 16px 18px 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.changelog-entry {
+  margin-bottom: 18px;
+}
+
+.changelog-entry:last-child {
+  margin-bottom: 0;
+}
+
+.changelog-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.changelog-entry-version {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.changelog-entry-date {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.changelog-entry-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.changelog-entry-list li {
+  margin-bottom: 4px;
+}
