@@ -32,6 +32,7 @@ Deploy-ready web tool for Plesk. The UI is now organized in three top-level cate
 - Smart URL normalization in all URL fields (`example.com` -> `https://example.com`)
 - Shareable report URL (`?job_id=...`) + copy button
 - Bilingual UI FR/EN (`?lang=fr` or `?lang=en`)
+- **Account system** (optional, scans remain public): first-registered account becomes admin; subsequent registrations require admin approval. Logged-in users see their own scan history; admins see everyone's scans (including anonymous). Honeypot + CSRF + rate-limited login/register.
 
 ### Public page insights
 
@@ -76,6 +77,11 @@ Deploy-ready web tool for Plesk. The UI is now organized in three top-level cate
 - `images_audit.php`: images audit endpoint
 - `download.php` / `download_conflicts.php`: CSV downloads
 - `lib.php`: shared helpers (security, jobs, rate-limit, parsing)
+- `auth.php`: auth library (sessions, CSRF, honeypot, users.json store, scan history log)
+- `login.php` / `register.php` / `logout.php`: auth pages
+- `history.php`: per-user scan history (admin sees all + anonymous)
+- `admin_users.php`: admin-only account management (approve, disable, promote, delete)
+- `me.php`: JSON endpoint used by the auth bar in `index.html`
 - `seo_sitemap_checker.py`: Python audit engine
 - `internal_link_mesh.py`: Python internal-link graph engine
 - `storage/`: runtime data (jobs, logs, reports)
@@ -96,6 +102,8 @@ Deploy-ready web tool for Plesk. The UI is now organized in three top-level cate
 - Concurrent jobs limits (global + per IP)
 - Sanitized `job_id` (anti-path-traversal)
 - Direct HTTP access to `storage/` blocked via `.htaccess`
+- Account system: `password_hash` (bcrypt), 12-char minimum, secure cookies (HttpOnly, SameSite=Lax, Secure on HTTPS), `session_regenerate_id` on login, CSRF tokens on all POST forms, invisible honeypot + time-trap on login/register, generic error messages (no account enumeration), rate limit (login 8 / 15 min, register 5 / 15 min)
+- HTTPS must be enforced server-side (Plesk → Hosting Settings → Permanent SEO-safe 301 redirect to HTTPS) — without HTTPS the session cookie can be intercepted
 
 ### Adding a new single-URL audit
 

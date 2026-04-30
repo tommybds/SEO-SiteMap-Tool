@@ -25,10 +25,12 @@
   </script>
   <link rel="preconnect" href="https://rsms.me/">
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-  <link rel="stylesheet" href="styles.css?v=20260423-1">
+  <link rel="stylesheet" href="styles.css?v=20260430-3">
+  <link rel="stylesheet" href="css/auth.css?v=20260430-3">
 </head>
 <body>
   <div class="wrap">
+    <nav id="auth-bar" class="auth-bar" hidden></nav>
     <div class="card">
       <div class="title-row">
         <h1 id="app-title">SEO Tool</h1>
@@ -48,10 +50,6 @@
           <svg class="nav-category-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>
           <span class="nav-category-label">Audit page</span>
         </button>
-        <button type="button" id="cat-synthesis-btn" class="nav-category-btn" role="tab" aria-selected="false" aria-controls="modes-synthesis">
-          <svg class="nav-category-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5h9M8 10h9M8 15h9M3 5l1.2 1.2L6 4.5M3 10l1.2 1.2L6 9.5M3 15l1.2 1.2L6 14.5"/></svg>
-          <span class="nav-category-label">Synthèse</span>
-        </button>
       </nav>
 
       <div class="mode-switch mode-switch-group" id="modes-site" data-category="site" role="tablist" aria-label="Audits site">
@@ -70,6 +68,10 @@
           <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.8 2.2a3.8 3.8 0 00-4.6 4.9L2.5 13.7 6.3 17.5l6.6-6.7a3.8 3.8 0 004.9-4.6l-2.3 2.3-2-2 2.3-2.3z"/></svg>
           <span class="mode-btn-label">Audit SEO technique</span>
         </button>
+        <button type="button" id="mode-geo-btn" class="mode-btn" role="tab" aria-selected="false">
+          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.2 2.6 2.2 11.4 0 14M10 3c-2.2 2.6-2.2 11.4 0 14"/></svg>
+          <span class="mode-btn-label">Audit GEO</span>
+        </button>
         <button type="button" id="mode-security-btn" class="mode-btn" role="tab" aria-selected="false">
           <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2l6 3v4c0 4-2.7 7.5-6 9-3.3-1.5-6-5-6-9V5l6-3z"/><path d="M7.5 10.2l1.8 1.8 3.2-3.5"/></svg>
           <span class="mode-btn-label">Audit sécurité</span>
@@ -82,22 +84,12 @@
           <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="1.5"/><circle cx="7" cy="9" r="1.6"/><path d="M3 14l4-4 4 3 3-4 3 4"/></svg>
           <span class="mode-btn-label">Audit images</span>
         </button>
-        <button type="button" id="mode-geo-btn" class="mode-btn" role="tab" aria-selected="false">
-          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.2 2.6 2.2 11.4 0 14M10 3c-2.2 2.6-2.2 11.4 0 14"/></svg>
-          <span class="mode-btn-label">Audit GEO</span>
-        </button>
         <button type="button" id="mode-redirect-btn" class="mode-btn" role="tab" aria-selected="false">
           <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h13l-3-3M17 13H4l3 3"/></svg>
           <span class="mode-btn-label">Test redirections</span>
         </button>
       </div>
 
-      <div class="mode-switch mode-switch-group" id="modes-synthesis" data-category="synthesis" role="tablist" aria-label="Synthèse" hidden>
-        <button type="button" id="mode-action-plan-btn" class="mode-btn" role="tab" aria-selected="false">
-          <svg class="mode-btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5h9M8 10h9M8 15h9M3 5l1.2 1.2L6 4.5M3 10l1.2 1.2L6 9.5M3 15l1.2 1.2L6 14.5"/></svg>
-          <span class="mode-btn-label">Plan d’action</span>
-        </button>
-      </div>
       <div id="mode-help" class="muted mode-help">Les deux sont liés: le maillage peut reprendre automatiquement le domaine du sitemap saisi.</div>
 
       <div id="sitemap-mode-panel">
@@ -256,9 +248,6 @@
         <div id="accessibility-form-error" class="danger" aria-live="polite"></div>
       </div>
 
-      <div id="action-plan-mode-panel" style="display:none;">
-        <div id="action-plan-intro" class="status action-plan-intro">Le plan d’action agrège les audits déjà lancés pour prioriser quoi corriger en premier.</div>
-      </div>
     </div>
 
     <div class="card" id="result-card" style="display:none;">
@@ -438,19 +427,24 @@
       <div id="accessibility-recos" class="tech-recos"></div>
     </div>
 
-    <div class="card" id="action-plan-card" style="display:none;">
-      <div class="row">
+    <aside class="card action-plan-card" id="action-plan-card" data-collapsed="false" style="display:none;">
+      <div class="row action-plan-head">
         <strong id="action-plan-section-title">Plan d’action priorisé</strong>
+        <button type="button" id="action-plan-toggle" class="action-plan-toggle" aria-expanded="true" aria-controls="action-plan-body" title="Réduire / déplier">
+          <svg class="action-plan-toggle-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
+        </button>
       </div>
-      <div id="action-plan-status" class="status"></div>
-      <div id="action-plan-kpis" class="tech-kpis"></div>
-      <div class="action-plan-grid">
-        <div id="action-plan-now" class="action-plan-box"></div>
-        <div id="action-plan-owners" class="action-plan-box"></div>
-        <div id="action-plan-sources" class="action-plan-box"></div>
+      <div id="action-plan-body" class="action-plan-body">
+        <div id="action-plan-status" class="status"></div>
+        <div id="action-plan-kpis" class="tech-kpis"></div>
+        <div class="action-plan-grid">
+          <div id="action-plan-now" class="action-plan-box"></div>
+          <div id="action-plan-owners" class="action-plan-box"></div>
+          <div id="action-plan-sources" class="action-plan-box"></div>
+        </div>
+        <div id="action-plan-backlog" class="action-plan-box action-plan-backlog"></div>
       </div>
-      <div id="action-plan-backlog" class="action-plan-box action-plan-backlog"></div>
-    </div>
+    </aside>
 
     <footer class="app-footer">
       <button type="button" id="footer-version" class="footer-version-btn" aria-haspopup="dialog">v…</button>
@@ -470,20 +464,21 @@
     </div>
   </div>
 
-  <script src="i18n.js?v=20260430-1"></script>
-  <script src="js/core/globals.js?v=20260423-1"></script>
-  <script src="js/core/runtime.js?v=20260423-1"></script>
-  <script src="js/features/sitemap.js?v=20260306-2"></script>
-  <script src="js/features/mesh.js?v=20260422-3"></script>
-  <script src="js/features/audits-shared.js?v=20260422-2"></script>
-  <script src="js/features/audits-tech.js?v=20260422-2"></script>
-  <script src="js/features/audits-redirect.js?v=20260422-2"></script>
-  <script src="js/features/audits-geo.js?v=20260430-2"></script>
-  <script src="js/features/audits-accessibility.js?v=20260422-2"></script>
-  <script src="js/features/audits-security.js?v=20260423-1"></script>
-  <script src="js/features/audits-images.js?v=20260423-1"></script>
-  <script src="js/features/action-plan.js?v=20260430-1"></script>
-  <script src="js/features/changelog.js?v=20260430-1"></script>
-  <script src="js/init.js?v=20260430-1"></script>
+  <script src="i18n.js?v=20260430-3"></script>
+  <script src="js/core/globals.js?v=20260430-3"></script>
+  <script src="js/core/runtime.js?v=20260430-3"></script>
+  <script src="js/features/sitemap.js?v=20260430-3"></script>
+  <script src="js/features/mesh.js?v=20260430-3"></script>
+  <script src="js/features/audits-shared.js?v=20260430-3"></script>
+  <script src="js/features/audits-tech.js?v=20260430-3"></script>
+  <script src="js/features/audits-redirect.js?v=20260430-3"></script>
+  <script src="js/features/audits-geo.js?v=20260430-3"></script>
+  <script src="js/features/audits-accessibility.js?v=20260430-3"></script>
+  <script src="js/features/audits-security.js?v=20260430-3"></script>
+  <script src="js/features/audits-images.js?v=20260430-3"></script>
+  <script src="js/features/action-plan.js?v=20260430-3"></script>
+  <script src="js/features/changelog.js?v=20260430-4"></script>
+  <script src="js/init.js?v=20260430-3"></script>
+  <script src="js/auth-bar.js?v=20260430-3"></script>
 </body>
 </html>

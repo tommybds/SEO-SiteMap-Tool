@@ -2,7 +2,10 @@
 declare(strict_types=1);
 
 require __DIR__ . '/lib.php';
+require __DIR__ . '/auth.php';
 ensure_storage_dirs();
+auth_session_start();
+$currentUser = current_user();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_json(['error' => 'Method not allowed'], 405);
@@ -76,6 +79,8 @@ $job = [
     'completed_at' => null,
     'pid' => null,
     'client_ip' => $ip,
+    'user_id' => $currentUser['id'] ?? null,
+    'user_email' => $currentUser['email'] ?? null,
     'sitemap' => $sitemap,
     'params' => [
         'max_urls' => $maxUrls,
@@ -128,6 +133,12 @@ $job['status'] = 'running';
 $job['started_at'] = gmdate('c');
 $job['pid'] = $pid;
 write_job($jobId, $job);
+
+scan_history_log('sitemap_audit', $sitemap, [
+    'job_id' => $jobId,
+    'job_kind' => 'audit',
+    'status' => 'running',
+]);
 
 respond_json([
     'job_id' => $jobId,

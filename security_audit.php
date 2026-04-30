@@ -2,7 +2,9 @@
 declare(strict_types=1);
 
 require __DIR__ . '/lib.php';
+require __DIR__ . '/auth.php';
 ensure_storage_dirs();
+auth_session_start();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_json(['error' => 'Method not allowed'], 405);
@@ -27,6 +29,8 @@ $validationError = '';
 if (!validate_public_url($url, $validationError)) {
     respond_json(['error' => $validationError], 400);
 }
+
+scan_history_log('security_audit', $url);
 
 $timeout = clamp_int($input['timeout'] ?? 12, 3, 30, 12);
 $maxRedirects = 8;

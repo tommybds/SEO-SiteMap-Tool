@@ -89,3 +89,47 @@
     .action-plan-backlog {
       margin-top: 0;
     }
+
+    .action-plan-card {
+      margin-top: 18px;
+    }
+    .action-plan-card .action-plan-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .action-plan-toggle {
+      appearance: none;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+      flex-shrink: 0;
+    }
+    .action-plan-toggle:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+    .action-plan-toggle-icon {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.18s ease;
+    }
+    .action-plan-card[data-collapsed="true"] .action-plan-toggle-icon {
+      transform: rotate(-90deg);
+    }
+    .action-plan-card[data-collapsed="true"] {
+      padding-bottom: 14px;
+    }
+    .action-plan-body {
+      margin-top: 12px;
+    }

@@ -525,12 +525,13 @@ function normalizeActionPlanPriority(priority) {
       const payload = latestActionPlanPayload;
       const findings = Array.isArray(payload.findings) ? payload.findings : [];
 
-      actionPlanStatus.textContent = findings.length
-        ? t('action_plan_status_ready', {
-          count: findings.length,
-          sources: Object.keys(payload.counts.sources || {}).map((key) => localizeActionPlanSource(key)).join(', '),
-        })
-        : t('action_plan_status_waiting');
+      actionPlanCard.style.display = findings.length ? 'block' : 'none';
+      if (!findings.length) return;
+
+      actionPlanStatus.textContent = t('action_plan_status_ready', {
+        count: findings.length,
+        sources: Object.keys(payload.counts.sources || {}).map((key) => localizeActionPlanSource(key)).join(', '),
+      });
 
       actionPlanKpis.innerHTML = '';
       [
@@ -550,3 +551,21 @@ function normalizeActionPlanPriority(priority) {
       renderActionPlanCountList(actionPlanSources, t('action_plan_by_source_title'), payload.counts.sources, localizeActionPlanSource);
       renderActionPlanFindingList(actionPlanBacklog, t('action_plan_backlog_title'), findings.slice(5, 13), t('action_plan_backlog_empty'));
     }
+
+    (function setupActionPlanToggle() {
+      if (!actionPlanToggle || !actionPlanCard || !actionPlanBody) return;
+      const STORAGE_KEY = "action_plan_collapsed";
+      const apply = (collapsed) => {
+        actionPlanCard.dataset.collapsed = collapsed ? "true" : "false";
+        actionPlanBody.style.display = collapsed ? "none" : "";
+        actionPlanToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      };
+      let initial = false;
+      try { initial = localStorage.getItem(STORAGE_KEY) === "1"; } catch (_) {}
+      apply(initial);
+      actionPlanToggle.addEventListener("click", () => {
+        const next = actionPlanCard.dataset.collapsed !== "true";
+        apply(next);
+        try { localStorage.setItem(STORAGE_KEY, next ? "1" : "0"); } catch (_) {}
+      });
+    })();

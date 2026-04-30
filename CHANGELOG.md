@@ -3,6 +3,16 @@
 Toutes les évolutions notables du projet sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.2.0] - 2026-04-30
+
+### Modifié — Navigation
+- Suppression de la catégorie « Synthèse » (elle ne contenait qu'un seul item) — la navigation passe à 2 catégories : « Audit site » et « Audit page ».
+- Le « Plan d'action » sort de la navigation et devient un panneau **toujours visible en bas** de la page dès qu'un audit a tourné. Il est repliable d'un clic, et l'état (replié/déplié) est mémorisé entre les visites via `localStorage`.
+- Les modes de « Audit page » sont réordonnés par fréquence d'usage : SEO technique → GEO → sécurité → accessibilité → images → redirections.
+
+### Corrigé — Audit GEO
+- Les buckets « Priorité haute/moyenne/basse » affichent désormais des actions lisibles (« Renforcer les signaux d'entité… ») au lieu des clés de check brutes (`geo_organization_entity`).
+
 ## [1.1.0] - 2026-04-30
 
 ### Ajouté — Audit GEO
@@ -27,6 +37,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 
 # Changelog (English)
 
+## [1.2.0] - 2026-04-30
+
+### Changed — Navigation
+- Removed the "Synthesis" category (it only held a single item) — the nav is now down to 2 categories: "Site audit" and "Page audit".
+- The "Action plan" moved out of the nav into a **persistent bottom panel** that appears as soon as one audit has run. It collapses with a single click, and the collapsed state is persisted across visits via `localStorage`.
+- "Page audit" modes are reordered by usage frequency: technical SEO → GEO → security → accessibility → images → redirects.
+
+### Fixed — GEO audit
+- Priority buckets ("High/Medium/Low priority") now display readable actions ("Strengthen entity signals…") instead of raw check keys (`geo_organization_entity`).
+
 ## [1.1.0] - 2026-04-30
 
 ### Added — GEO audit
@@ -47,4 +67,5 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 ### Added — UI
 - Version pill `v1.1.0` in the footer; clicking opens a bilingual (fr/en) changelog modal.
 
+[1.2.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.2.0
 [1.1.0]: https://github.com/tommybds/SEO-SiteMap-Tool/releases/tag/v1.1.0

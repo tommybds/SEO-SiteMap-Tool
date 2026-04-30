@@ -2,7 +2,10 @@
 declare(strict_types=1);
 
 require __DIR__ . '/lib.php';
+require __DIR__ . '/auth.php';
 ensure_storage_dirs();
+auth_session_start();
+$currentUser = current_user();
 @ini_set('max_execution_time', '0');
 @set_time_limit(0);
 
@@ -77,6 +80,8 @@ $job = [
     'completed_at' => null,
     'pid' => null,
     'client_ip' => $ip,
+    'user_id' => $currentUser['id'] ?? null,
+    'user_email' => $currentUser['email'] ?? null,
     'start_url' => $startUrl,
     'params' => [
         'max_pages' => $maxPages,
@@ -123,6 +128,12 @@ $job['status'] = 'running';
 $job['started_at'] = gmdate('c');
 $job['pid'] = $pid;
 write_mesh_job($jobId, $job);
+
+scan_history_log('mesh_audit', $startUrl, [
+    'job_id' => $jobId,
+    'job_kind' => 'mesh',
+    'status' => 'running',
+]);
 
 respond_json([
     'job_id' => $jobId,

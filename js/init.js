@@ -416,15 +416,11 @@ form.addEventListener('submit', async (event) => {
     if (modeSecurityBtn) modeSecurityBtn.addEventListener('click', () => setMode('security'));
     if (modeImagesBtn) modeImagesBtn.addEventListener('click', () => setMode('images'));
     if (modeGeoBtn) modeGeoBtn.addEventListener('click', () => setMode('geo'));
-    if (modeActionPlanBtn) modeActionPlanBtn.addEventListener('click', () => setMode('action-plan'));
     if (catSiteBtn) catSiteBtn.addEventListener('click', () => {
       if (modeCategory(currentMode) !== 'site') setMode(CATEGORY_DEFAULT_MODE.site);
     });
     if (catPageBtn) catPageBtn.addEventListener('click', () => {
       if (modeCategory(currentMode) !== 'page') setMode(CATEGORY_DEFAULT_MODE.page);
-    });
-    if (catSynthesisBtn) catSynthesisBtn.addEventListener('click', () => {
-      if (modeCategory(currentMode) !== 'synthesis') setMode(CATEGORY_DEFAULT_MODE.synthesis);
     });
     const sitemapInput = document.getElementById('sitemap');
     [sitemapInput, meshStartUrl, techUrlInput, redirectUrlInput, accessibilityUrlInput, securityUrlInput, imagesUrlInput, geoUrlInput]

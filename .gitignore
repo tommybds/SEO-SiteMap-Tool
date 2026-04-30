@@ -12,12 +12,6 @@ analytics.local.js
 local_sitemap_json_urls.php
 
 # Runtime data (generated at execution time)
-storage/jobs/*
-storage/mesh_jobs/*
-storage/logs/*
-storage/reports/*
-storage/rate_limit/*
-storage/state.json
-
-# Keep storage access rules in git
+# Ignore everything in storage/ except the access-rules .htaccess
+storage/*
 !storage/.htaccess

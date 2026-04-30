@@ -51,7 +51,6 @@ function t(key, vars = {}) {
       if (mode === 'security') return t('mode_help_security');
       if (mode === 'images') return t('mode_help_images');
       if (mode === 'geo') return t('mode_help_geo');
-      if (mode === 'action-plan') return t('mode_help_action_plan');
       return t('mode_help');
     }
 
@@ -84,7 +83,6 @@ function t(key, vars = {}) {
       const groups = [
         [modesSiteGroup, 'site', catSiteBtn],
         [modesPageGroup, 'page', catPageBtn],
-        [modesSynthesisGroup, 'synthesis', catSynthesisBtn],
       ];
       groups.forEach(([group, groupCat, btn]) => {
         if (group) {
@@ -114,10 +112,8 @@ function t(key, vars = {}) {
       setModeBtnLabel(modeGeoBtn, t('mode_geo'));
       if (modeSecurityBtn) setModeBtnLabel(modeSecurityBtn, t('mode_security'));
       if (modeImagesBtn) setModeBtnLabel(modeImagesBtn, t('mode_images'));
-      setModeBtnLabel(modeActionPlanBtn, t('mode_action_plan'));
       if (catSiteBtn) setCategoryBtnLabel(catSiteBtn, t('nav_category_site'));
       if (catPageBtn) setCategoryBtnLabel(catPageBtn, t('nav_category_page'));
-      if (catSynthesisBtn) setCategoryBtnLabel(catSynthesisBtn, t('nav_category_synthesis'));
       modeHelp.textContent = getModeHelpText();
       labelSitemap.textContent = t('label_sitemap');
       labelMaxUrls.textContent = t('label_max_urls');
@@ -155,7 +151,6 @@ function t(key, vars = {}) {
       if (accessibilitySectionTitle) accessibilitySectionTitle.textContent = t('accessibility_section_title');
       if (geoSectionTitle) geoSectionTitle.textContent = t('geo_section_title');
       if (actionPlanSectionTitle) actionPlanSectionTitle.textContent = t('action_plan_section_title');
-      if (actionPlanIntro) actionPlanIntro.textContent = t('action_plan_intro');
       if (redirectTechDetailsSummary) redirectTechDetailsSummary.textContent = t('redirect_details_summary');
       shareMeshBtn.textContent = t('share_mesh_btn');
       if (meshToggleGraphBtn) {
@@ -198,14 +193,12 @@ function t(key, vars = {}) {
       if (modeRedirectBtn) modeRedirectBtn.classList.toggle('active', currentMode === 'redirect');
       if (modeAccessibilityBtn) modeAccessibilityBtn.classList.toggle('active', currentMode === 'accessibility');
       if (modeGeoBtn) modeGeoBtn.classList.toggle('active', currentMode === 'geo');
-      if (modeActionPlanBtn) modeActionPlanBtn.classList.toggle('active', currentMode === 'action-plan');
       modeSitemapBtn.setAttribute('aria-selected', currentMode === 'sitemap' ? 'true' : 'false');
       modeMeshBtn.setAttribute('aria-selected', currentMode === 'mesh' ? 'true' : 'false');
       if (modeTechBtn) modeTechBtn.setAttribute('aria-selected', currentMode === 'tech' ? 'true' : 'false');
       if (modeRedirectBtn) modeRedirectBtn.setAttribute('aria-selected', currentMode === 'redirect' ? 'true' : 'false');
       if (modeAccessibilityBtn) modeAccessibilityBtn.setAttribute('aria-selected', currentMode === 'accessibility' ? 'true' : 'false');
       if (modeGeoBtn) modeGeoBtn.setAttribute('aria-selected', currentMode === 'geo' ? 'true' : 'false');
-      if (modeActionPlanBtn) modeActionPlanBtn.setAttribute('aria-selected', currentMode === 'action-plan' ? 'true' : 'false');
       setRunningState(runBtn.disabled);
       setMeshRunningState(meshRunBtn.disabled);
       if (techRunBtn) setTechRunningState(techRunBtn.disabled);
@@ -279,7 +272,6 @@ function t(key, vars = {}) {
       if (mode === 'security') return 'security';
       if (mode === 'images') return 'images';
       if (mode === 'geo') return 'geo';
-      if (mode === 'action-plan') return 'action-plan';
       return 'sitemap';
     }
 
@@ -345,14 +337,14 @@ function t(key, vars = {}) {
     }
 
     function keepActiveModeButtonVisible() {
-      const activeModeBtn = [modeSitemapBtn, modeMeshBtn, modeTechBtn, modeRedirectBtn, modeAccessibilityBtn, modeSecurityBtn, modeImagesBtn, modeGeoBtn, modeActionPlanBtn]
+      const activeModeBtn = [modeSitemapBtn, modeMeshBtn, modeTechBtn, modeRedirectBtn, modeAccessibilityBtn, modeSecurityBtn, modeImagesBtn, modeGeoBtn]
         .find((btn) => btn && btn.classList.contains('active'));
       if (!activeModeBtn || typeof activeModeBtn.scrollIntoView !== 'function') return;
       activeModeBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
 
     function setMode(mode, syncUrl = true) {
-      const allowed = ['mesh', 'tech', 'redirect', 'accessibility', 'security', 'images', 'geo', 'action-plan'];
+      const allowed = ['mesh', 'tech', 'redirect', 'accessibility', 'security', 'images', 'geo'];
       currentMode = allowed.includes(mode) ? mode : 'sitemap';
       if (currentMode === 'tech' && !hasTechMode) currentMode = 'sitemap';
       if (currentMode === 'redirect' && !hasRedirectMode) currentMode = 'sitemap';
@@ -368,7 +360,6 @@ function t(key, vars = {}) {
       if (securityModePanel) securityModePanel.style.display = currentMode === 'security' ? 'block' : 'none';
       if (imagesModePanel) imagesModePanel.style.display = currentMode === 'images' ? 'block' : 'none';
       if (geoModePanel) geoModePanel.style.display = currentMode === 'geo' ? 'block' : 'none';
-      if (actionPlanModePanel) actionPlanModePanel.style.display = currentMode === 'action-plan' ? 'block' : 'none';
       resultCard.style.display = currentMode === 'sitemap' && sitemapHasOutput ? 'block' : 'none';
       previewCard.style.display = currentMode === 'sitemap' && previewLoadedFor ? 'block' : 'none';
       meshCard.style.display = currentMode === 'mesh' && !!latestMeshPayload ? 'block' : 'none';
@@ -378,7 +369,6 @@ function t(key, vars = {}) {
       if (securityCard) securityCard.style.display = currentMode === 'security' && !!latestSecurityPayload ? 'block' : 'none';
       if (imagesCard) imagesCard.style.display = currentMode === 'images' && !!latestImagesPayload ? 'block' : 'none';
       if (geoCard) geoCard.style.display = currentMode === 'geo' && !!latestGeoPayload ? 'block' : 'none';
-      if (actionPlanCard) actionPlanCard.style.display = currentMode === 'action-plan' ? 'block' : 'none';
       modeSitemapBtn.classList.toggle('active', currentMode === 'sitemap');
       modeMeshBtn.classList.toggle('active', currentMode === 'mesh');
       if (modeTechBtn) modeTechBtn.classList.toggle('active', currentMode === 'tech');
@@ -387,7 +377,6 @@ function t(key, vars = {}) {
       if (modeSecurityBtn) modeSecurityBtn.classList.toggle('active', currentMode === 'security');
       if (modeImagesBtn) modeImagesBtn.classList.toggle('active', currentMode === 'images');
       if (modeGeoBtn) modeGeoBtn.classList.toggle('active', currentMode === 'geo');
-      if (modeActionPlanBtn) modeActionPlanBtn.classList.toggle('active', currentMode === 'action-plan');
       modeSitemapBtn.setAttribute('aria-selected', currentMode === 'sitemap' ? 'true' : 'false');
       modeMeshBtn.setAttribute('aria-selected', currentMode === 'mesh' ? 'true' : 'false');
       if (modeTechBtn) modeTechBtn.setAttribute('aria-selected', currentMode === 'tech' ? 'true' : 'false');
@@ -396,7 +385,6 @@ function t(key, vars = {}) {
       if (modeSecurityBtn) modeSecurityBtn.setAttribute('aria-selected', currentMode === 'security' ? 'true' : 'false');
       if (modeImagesBtn) modeImagesBtn.setAttribute('aria-selected', currentMode === 'images' ? 'true' : 'false');
       if (modeGeoBtn) modeGeoBtn.setAttribute('aria-selected', currentMode === 'geo' ? 'true' : 'false');
-      if (modeActionPlanBtn) modeActionPlanBtn.setAttribute('aria-selected', currentMode === 'action-plan' ? 'true' : 'false');
       modeHelp.textContent = getModeHelpText();
       applyCategoryVisibility(currentMode);
       if (currentMode === 'mesh') {

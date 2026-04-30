@@ -1,8 +1,24 @@
 // App version + changelog modal.
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 const CHANGELOG_ENTRIES = [
+  {
+    version: '1.2.0',
+    date: '2026-04-30',
+    fr: [
+      'Navigation simplifiée: 2 catégories au lieu de 3 (« Synthèse » supprimée car elle ne contenait qu’un seul item).',
+      'Plan d’action sorti de la nav: il s’affiche désormais en bas dès qu’un audit a tourné, repliable d’un clic et état mémorisé entre les visites.',
+      'Audits page réordonnés par fréquence d’usage: SEO technique → GEO → sécurité → accessibilité → images → redirections.',
+      'Audit GEO: les buckets « Priorité haute/moyenne/basse » affichent désormais des actions lisibles au lieu des clés de check brutes (geo_organization_entity → « Renforcer les signaux d’entité »).',
+    ],
+    en: [
+      'Simplified navigation: 2 categories instead of 3 ("Synthesis" removed since it only held a single item).',
+      'Action plan moved out of the nav: it now sits at the bottom and shows up as soon as one audit has run, collapsible with a single click, state persisted across visits.',
+      'Page audits reordered by usage frequency: technical SEO → GEO → security → accessibility → images → redirects.',
+      'GEO audit: priority buckets now show readable actions instead of raw check keys (geo_organization_entity → "Strengthen entity signals").',
+    ],
+  },
   {
     version: '1.1.0',
     date: '2026-04-30',

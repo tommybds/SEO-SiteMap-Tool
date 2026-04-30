@@ -8,13 +8,10 @@
     var modeRedirectBtn = document.getElementById('mode-redirect-btn');
     var modeAccessibilityBtn = document.getElementById('mode-accessibility-btn');
     var modeGeoBtn = document.getElementById('mode-geo-btn');
-    var modeActionPlanBtn = document.getElementById('mode-action-plan-btn');
     var catSiteBtn = document.getElementById('cat-site-btn');
     var catPageBtn = document.getElementById('cat-page-btn');
-    var catSynthesisBtn = document.getElementById('cat-synthesis-btn');
     var modesSiteGroup = document.getElementById('modes-site');
     var modesPageGroup = document.getElementById('modes-page');
-    var modesSynthesisGroup = document.getElementById('modes-synthesis');
     var MODE_TO_CATEGORY = {
       sitemap: 'site',
       mesh: 'site',
@@ -24,12 +21,10 @@
       images: 'page',
       geo: 'page',
       redirect: 'page',
-      'action-plan': 'synthesis',
     };
     var CATEGORY_DEFAULT_MODE = {
       site: 'sitemap',
       page: 'tech',
-      synthesis: 'action-plan',
     };
     var modeHelp = document.getElementById('mode-help');
     var sitemapModePanel = document.getElementById('sitemap-mode-panel');
@@ -38,7 +33,6 @@
     var redirectModePanel = document.getElementById('redirect-mode-panel');
     var accessibilityModePanel = document.getElementById('accessibility-mode-panel');
     var geoModePanel = document.getElementById('geo-mode-panel');
-    var actionPlanModePanel = document.getElementById('action-plan-mode-panel');
     var meshForm = document.getElementById('mesh-form');
     var meshRunBtn = document.getElementById('mesh-run-btn');
     var meshFormError = document.getElementById('mesh-form-error');
@@ -88,13 +82,14 @@
     var accessibilityCard = document.getElementById('accessibility-card');
     var geoCard = document.getElementById('geo-card');
     var actionPlanCard = document.getElementById('action-plan-card');
+    var actionPlanToggle = document.getElementById('action-plan-toggle');
+    var actionPlanBody = document.getElementById('action-plan-body');
     var meshSectionTitle = document.getElementById('mesh-section-title');
     var techSectionTitle = document.getElementById('tech-section-title');
     var redirectSectionTitle = document.getElementById('redirect-section-title');
     var accessibilitySectionTitle = document.getElementById('accessibility-section-title');
     var geoSectionTitle = document.getElementById('geo-section-title');
     var actionPlanSectionTitle = document.getElementById('action-plan-section-title');
-    var actionPlanIntro = document.getElementById('action-plan-intro');
     var actionPlanStatus = document.getElementById('action-plan-status');
     var actionPlanKpis = document.getElementById('action-plan-kpis');
     var actionPlanNow = document.getElementById('action-plan-now');
